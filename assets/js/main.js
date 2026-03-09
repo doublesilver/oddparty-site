@@ -1,5 +1,4 @@
-/* --- Header scroll shadow --- */
-const header = document.getElementById('site-header');
+/* --- Sticky CTA visibility --- */
 const hero = document.getElementById('hero');
 const stickyCta = document.getElementById('sticky-cta');
 
@@ -9,10 +8,6 @@ const observer = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.1 });
 if (hero) observer.observe(hero);
-
-window.addEventListener('scroll', () => {
-  if (header) header.classList.toggle('scrolled', window.scrollY > 10);
-}, { passive: true });
 
 /* --- FAQ accordion --- */
 document.querySelectorAll('.faq-q').forEach(btn => {

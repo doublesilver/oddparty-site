@@ -299,10 +299,8 @@ input {
    ============================================================ */
 .hero {
   position: relative;
-  height: calc(90vh + var(--header-h));
-  min-height: 620px;
-  margin-top: calc(-1 * var(--header-h));
-  padding-top: var(--header-h);
+  height: 100vh;
+  min-height: 600px;
   display: flex;
   align-items: flex-end;
   overflow: hidden;
@@ -1088,6 +1086,41 @@ input {
   font-size: var(--fs-xs);
   color: var(--muted);
   margin-top: var(--sp-md);
+  line-height: 1.6;
+}
+
+/* Refund policy */
+.refund-policy {
+  margin-top: var(--sp-2xl);
+  padding: var(--sp-xl);
+  background: var(--bg-subtle);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+}
+.refund-title {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink-sub);
+  margin-bottom: var(--sp-md);
+}
+.refund-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--sp-md) 0;
+}
+.refund-list li {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  line-height: 1.8;
+  padding-left: 1em;
+  text-indent: -1em;
+}
+.refund-list li::before {
+  content: "\2022\00a0";
+}
+.refund-notice {
+  font-size: var(--fs-xs);
+  color: var(--muted);
   line-height: 1.6;
 }
 
