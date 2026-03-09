@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>관리자 — ODD PARTY</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <style>
+    /* ── Admin layout ── */
+    body {
+      min-height: 100vh;
+    }
+
+    /* ── Login screen ── */
+    #login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--sp-xl);
+    }
+    .login-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-md);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+    .login-logo {
+      height: 32px;
+      margin-bottom: var(--sp-xl);
+    }
+    .login-title {
+      font-size: var(--fs-xl);
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .login-subtitle {
+      font-size: var(--fs-sm);
+      color: var(--muted);
+      margin-bottom: var(--sp-2xl);
+    }
+    .login-input {
+      width: 100%;
+      padding: 12px 16px;
+      font-family: var(--font);
+      font-size: var(--fs-base);
+      color: var(--ink);
+      background: var(--bg-subtle);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-md);
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: var(--sp-md);
+    }
+    .login-input:focus {
+      border-color: var(--primary);
+    }
+    .login-btn {
+      width: 100%;
+      padding: 13px;
+      font-family: var(--font);
+      font-size: var(--fs-md);
+      font-weight: 700;
+      color: #fff;
+      background: var(--gradient-btn);
+      border: none;
+      border-radius: var(--r-md);
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .login-btn:hover { opacity: 0.92; }
+    .login-btn:active { transform: scale(0.98); }
+    .login-error {
+      display: none;
+      font-size: var(--fs-sm);
+      color: var(--accent);
+      margin-top: var(--sp-sm);
+    }
+    .login-error.visible { display: block; }
+
+    /* ── Admin shell (post-login) ── */
+    #admin-shell {
+      display: none;
+      min-height: 100vh;
+    }
+    #admin-shell.visible { display: flex; flex-direction: column; }
+
+    /* ── Admin header ── */
+    .admin-header {
+      height: var(--header-h);
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--sp-xl);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+    .admin-header-logo {
+      height: 26px;
+    }
+    .admin-header-right {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+    }
+    .admin-badge {
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      color: var(--primary);
+      background: var(--primary-soft);
+      padding: 3px 10px;
+      border-radius: var(--r-full);
+    }
+    .logout-btn {
+      font-family: var(--font);
+      font-size: var(--fs-sm);
+      font-weight: 600;
+      color: var(--muted);
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-full);
+      padding: 5px 16px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .logout-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* ── Body layout: sidebar + main ── */
+    .admin-body {
+      display: flex;
+      flex: 1;
+    }
+
+    /* ── Sidebar ── */
+    .admin-sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      padding: var(--sp-xl) 0;
+      position: sticky;
+      top: var(--header-h);
+      height: calc(100vh - var(--header-h));
+      overflow-y: auto;
+    }
+    .sidebar-nav {
+      list-style: none;
+    }
+    .sidebar-nav-item {
+      display: block;
+    }
+    .sidebar-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      width: 100%;
+      padding: 11px 20px;
+      font-family: var(--font);
+      font-size: var(--fs-sm);
+      font-weight: 600;
+      color: var(--muted);
+      background: none;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 0;
+      transition: color 0.15s, background 0.15s;
+      border-left: 3px solid transparent;
+    }
+    .sidebar-nav-btn:hover {
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+    .sidebar-nav-btn.active {
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-left-color: var(--primary);
+    }
+    .sidebar-nav-icon {
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    /* ── Mobile top tabs ── */
+    .admin-tabs {
+      display: none;
+      overflow-x: auto;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 var(--sp-md);
+      gap: 0;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .admin-tabs::-webkit-scrollbar { display: none; }
+    .admin-tab-btn {
+      flex-shrink: 0;
+      font-family: var(--font);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      color: var(--muted);
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .admin-tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    /* ── Main content ── */
+    .admin-main {
+      flex: 1;
+      padding: var(--sp-2xl) var(--sp-xl);
+      max-width: 860px;
+    }
+
+    /* ── Section panels ── */
+    .admin-section {
+      display: none;
+    }
+    .admin-section.active {
+      display: block;
+    }
+    .admin-section-title {
+      font-size: var(--fs-xl);
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: var(--sp-xl);
+    }
+
+    /* ── Stat cards ── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--sp-lg);
+      margin-bottom: var(--sp-2xl);
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-sm);
+      padding: var(--sp-xl) var(--sp-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .stat-card-label {
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .stat-card-value {
+      font-size: var(--fs-2xl);
+      font-weight: 800;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    .stat-card-sub {
+      font-size: var(--fs-xs);
+      color: var(--muted);
+    }
+    .stat-card-accent { border-top: 3px solid var(--primary); }
+    .stat-card-accent2 { border-top: 3px solid var(--accent); }
+    .stat-card-accent3 { border-top: 3px solid var(--cyan); }
+    .stat-card-accent4 { border-top: 3px solid var(--pink); }
+
+    /* ── Content management fields ── */
+    .content-group {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-sm);
+      padding: var(--sp-xl);
+      margin-bottom: var(--sp-xl);
+    }
+    .content-group-title {
+      font-size: var(--fs-base);
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: var(--sp-lg);
+      padding-bottom: var(--sp-sm);
+      border-bottom: 1px solid var(--border);
+    }
+    .content-field {
+      margin-bottom: var(--sp-lg);
+    }
+    .content-field:last-child {
+      margin-bottom: 0;
+    }
+    .content-label {
+      display: block;
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .content-label span {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--muted);
+      opacity: 0.75;
+    }
+    .content-textarea {
+      width: 100%;
+      font-family: var(--font);
+      font-size: var(--fs-sm);
+      color: var(--ink);
+      background: var(--bg-subtle);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 10px 14px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+      line-height: 1.6;
+      min-height: 60px;
+    }
+    .content-textarea:focus {
+      border-color: var(--primary);
+      background: var(--card);
+    }
+    .content-textarea.tall {
+      min-height: 100px;
+    }
+
+    /* ── Save bar ── */
+    .save-bar {
+      position: sticky;
+      bottom: 0;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      padding: var(--sp-md) var(--sp-xl);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-md);
+      z-index: 50;
+      box-shadow: 0 -2px 16px rgba(124, 91, 245, 0.07);
+    }
+    .save-bar-hint {
+      font-size: var(--fs-sm);
+      color: var(--muted);
+    }
+    .save-btn {
+      font-family: var(--font);
+      font-size: var(--fs-base);
+      font-weight: 700;
+      color: #fff;
+      background: var(--gradient-btn);
+      border: none;
+      border-radius: var(--r-full);
+      padding: 11px 32px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .save-btn:hover { opacity: 0.9; }
+    .save-btn:active { transform: scale(0.97); }
+    .save-success-msg {
+      display: none;
+      font-size: var(--fs-sm);
+      font-weight: 600;
+      color: #22c55e;
+    }
+    .save-success-msg.visible { display: inline; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .admin-sidebar { display: none; }
+      .admin-tabs { display: flex; }
+      .admin-main {
+        padding: var(--sp-lg);
+      }
+      .stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--sp-md);
+      }
+      .save-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--sp-sm);
+      }
+      .save-btn { width: 100%; text-align: center; }
+    }
+
+    @media (max-width: 400px) {
+      .login-card { padding: 32px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =================== LOGIN SCREEN =================== -->
+  <div id="login-screen">
+    <div class="login-card">
+      <img src="assets/images/logo-dark.png" alt="ODD PARTY" class="login-logo logo-dark" />
+      <img src="assets/images/logo-light.png" alt="ODD PARTY" class="login-logo logo-light" style="display:none;" />
+      <h1 class="login-title">관리자 로그인</h1>
+      <p class="login-subtitle">ODD PARTY 관리자 전용 페이지입니다.</p>
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <input
+          class="login-input"
+          type="password"
+          id="login-pw"
+          placeholder="비밀번호를 입력하세요"
+          autocomplete="current-password"
+          autofocus
+        />
+        <button class="login-btn" type="submit">로그인</button>
+        <p class="login-error" id="login-error">비밀번호가 올바르지 않습니다.</p>
+      </form>
+    </div>
+  </div>
+
+  <!-- =================== ADMIN SHELL =================== -->
+  <div id="admin-shell">
+
+    <!-- Header -->
+    <header class="site-header header-solid admin-header">
+      <a href="index.html" aria-label="ODD PARTY 홈으로">
+        <img src="assets/images/logo-dark.png" alt="ODD PARTY" class="admin-header-logo logo-dark" />
+        <img src="assets/images/logo-light.png" alt="ODD PARTY" class="admin-header-logo logo-light" style="display:none;" />
+      </a>
+      <div class="admin-header-right">
+        <span class="admin-badge">Admin</span>
+        <button class="logout-btn" onclick="handleLogout()" type="button">로그아웃</button>
+      </div>
+    </header>
+
+    <!-- Mobile top tabs -->
+    <div class="admin-tabs" id="admin-tabs">
+      <button class="admin-tab-btn active" data-target="sec-dashboard" onclick="switchSection('sec-dashboard', this)">대시보드</button>
+      <button class="admin-tab-btn" data-target="sec-main" onclick="switchSection('sec-main', this)">메인페이지</button>
+      <button class="admin-tab-btn" data-target="sec-form" onclick="switchSection('sec-form', this)">신청페이지</button>
+      <button class="admin-tab-btn" data-target="sec-complete" onclick="switchSection('sec-complete', this)">완료페이지</button>
+    </div>
+
+    <!-- Body -->
+    <div class="admin-body">
+
+      <!-- Sidebar -->
+      <aside class="admin-sidebar">
+        <ul class="sidebar-nav" role="list">
+          <li class="sidebar-nav-item">
+            <button class="sidebar-nav-btn active" data-target="sec-dashboard" onclick="switchSection('sec-dashboard', this)" type="button">
+              <span class="sidebar-nav-icon">📊</span> 대시보드
+            </button>
+          </li>
+          <li class="sidebar-nav-item">
+            <button class="sidebar-nav-btn" data-target="sec-main" onclick="switchSection('sec-main', this)" type="button">
+              <span class="sidebar-nav-icon">🏠</span> 메인페이지 관리
+            </button>
+          </li>
+          <li class="sidebar-nav-item">
+            <button class="sidebar-nav-btn" data-target="sec-form" onclick="switchSection('sec-form', this)" type="button">
+              <span class="sidebar-nav-icon">📝</span> 신청페이지 관리
+            </button>
+          </li>
+          <li class="sidebar-nav-item">
+            <button class="sidebar-nav-btn" data-target="sec-complete" onclick="switchSection('sec-complete', this)" type="button">
+              <span class="sidebar-nav-icon">✅</span> 완료페이지 관리
+            </button>
+          </li>
+        </ul>
+      </aside>
+
+      <!-- Main content -->
+      <main class="admin-main">
+
+        <!-- ── 대시보드 ── -->
+        <section class="admin-section active" id="sec-dashboard">
+          <h2 class="admin-section-title">대시보드</h2>
+          <div class="stat-grid">
+            <div class="stat-card stat-card-accent">
+              <span class="stat-card-label">총 신청</span>
+              <span class="stat-card-value">—</span>
+              <span class="stat-card-sub">누적 신청자 수</span>
+            </div>
+            <div class="stat-card stat-card-accent2">
+              <span class="stat-card-label">오늘 신청</span>
+              <span class="stat-card-value">—</span>
+              <span class="stat-card-sub">오늘 접수된 신청</span>
+            </div>
+            <div class="stat-card stat-card-accent3">
+              <span class="stat-card-label">지점별</span>
+              <span class="stat-card-value">—</span>
+              <span class="stat-card-sub">건대 / 영등포</span>
+            </div>
+            <div class="stat-card stat-card-accent4">
+              <span class="stat-card-label">요일별</span>
+              <span class="stat-card-value">—</span>
+              <span class="stat-card-sub">금 / 토 / 일</span>
+            </div>
+          </div>
+          <div class="content-group">
+            <p class="content-group-title">안내</p>
+            <p style="font-size:var(--fs-sm);color:var(--muted);line-height:1.8;">
+              이 대시보드는 향후 신청 데이터 연동 시 자동으로 채워집니다.<br/>
+              현재는 콘텐츠 관리 기능을 통해 각 페이지 텍스트를 수정하고 저장할 수 있습니다.<br/>
+              저장된 내용은 브라우저 localStorage에 보관됩니다.
+            </p>
+          </div>
+        </section>
+
+        <!-- ── 메인페이지 관리 ── -->
+        <section class="admin-section" id="sec-main">
+          <h2 class="admin-section-title">메인페이지 관리</h2>
+
+          <div class="content-group">
+            <p class="content-group-title">히어로 섹션</p>
+            <div class="content-field">
+              <label class="content-label" for="main-hero-title">히어로 타이틀 <span>(index.html · .hero-title)</span></label>
+              <textarea class="content-textarea" id="main-hero-title" rows="2">낯선 사람들이 만나는 밤</textarea>
+            </div>
+            <div class="content-field">
+              <label class="content-label" for="main-hero-sub">히어로 서브타이틀 <span>(index.html · .hero-sub)</span></label>
+              <textarea class="content-textarea" id="main-hero-sub" rows="2">20~30대 소셜 파티 · ODD PARTY</textarea>
+            </div>
+          </div>
+
+          <div class="content-group">
+            <p class="content-group-title">About 섹션</p>
+            <div class="content-field">
+              <label class="content-label" for="main-about-p1">소개 본문 1단락 <span>(index.html · .intro-body p:first-child)</span></label>
+              <textarea class="content-textarea tall" id="main-about-p1" rows="4">ODD PARTY는 혼자 가도 어색하지 않은 소셜 파티입니다. 직장·학교·동네 어디에서도 만날 수 없는 새로운 인연을 만들어 드립니다. 처음 만나는 사이도 자연스럽게 어울릴 수 있도록, 감각적인 공간과 즐거운 프로그램을 준비했습니다.</textarea>
+            </div>
+            <div class="content-field">
+              <label class="content-label" for="main-about-p2">소개 본문 2단락 <span>(index.html · .intro-body p:last-child)</span></label>
+              <textarea class="content-textarea tall" id="main-about-p2" rows="4">매주 금·토·일 진행되며, 서울 건대 / 영등포 두 지점에서 만나볼 수 있습니다. 20~30대라면 누구나 편하게 신청하실 수 있어요. 혼자 오셔도 충분히 즐길 수 있습니다.</textarea>
+            </div>
+          </div>
+
+          <div class="content-group">
+            <p class="content-group-title">가격 섹션</p>
+            <div class="content-field">
+              <label class="content-label" for="main-price-info">가격 안내 텍스트 <span>(index.html · .price-info)</span></label>
+              <textarea class="content-textarea tall" id="main-price-info" rows="3">주류및 음료는 모든 지점 제공됩니다! (한잔등 제한 없음)
+할인코드 보유 시 신청 폼 입력란에 기재해 주세요. 할인은 최종 결제 금액에서 차감됩니다.</textarea>
+            </div>
+          </div>
+
+          <div class="content-group">
+            <p class="content-group-title">CTA 섹션</p>
+            <div class="content-field">
+              <label class="content-label" for="main-cta-title">CTA 타이틀 <span>(index.html · .cta-title)</span></label>
+              <textarea class="content-textarea" id="main-cta-title" rows="2">자리가 빠르게 마감됩니다</textarea>
+            </div>
+            <div class="content-field">
+              <label class="content-label" for="main-cta-sub">CTA 서브텍스트 <span>(index.html · .cta-sub)</span></label>
+              <textarea class="content-textarea" id="main-cta-sub" rows="3">매 회차 소수 정예로 진행되어 자리가 빠르게 찹니다.
+친구에게 공유하고 함께 신청해 보세요!</textarea>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── 신청페이지 관리 ── -->
+        <section class="admin-section" id="sec-form">
+          <h2 class="admin-section-title">신청페이지 관리</h2>
+
+          <div class="content-group">
+            <p class="content-group-title">폼 헤더</p>
+            <div class="content-field">
+              <label class="content-label" for="form-title">폼 타이틀 <span>(form.html · .form-title)</span></label>
+              <textarea class="content-textarea" id="form-title" rows="2">파티 신청</textarea>
+            </div>
+            <div class="content-field">
+              <label class="content-label" for="form-subtitle">폼 서브타이틀 <span>(form.html · .form-subtitle)</span></label>
+              <textarea class="content-textarea" id="form-subtitle" rows="2">정보를 입력하고 입금까지 완료하시면 신청이 확정됩니다.</textarea>
+            </div>
+          </div>
+
+          <div class="content-group">
+            <p class="content-group-title">제출 안내</p>
+            <div class="content-field">
+              <label class="content-label" for="form-submit-note">제출 안내 문구 <span>(form.html · .submit-note)</span></label>
+              <textarea class="content-textarea" id="form-submit-note" rows="3">접수 후 입금 완료 시 신청이 확정됩니다.
+계좌: 농협 351-0948-4473-43 (이@봄)</textarea>
+            </div>
+          </div>
+
+          <div class="content-group">
+            <p class="content-group-title">환불 규정</p>
+            <div class="content-field">
+              <label class="content-label" for="form-refund-title">환불 규정 타이틀 <span>(form.html · .refund-title)</span></label>
+              <textarea class="content-textarea" id="form-refund-title" rows="1">참가비 환불 규정</textarea>
+            </div>
+            <div class="content-field">
+              <label class="content-label" for="form-refund-list">환불 규정 항목 <span>(form.html · .refund-list, 줄바꿈으로 구분)</span></label>
+              <textarea class="content-textarea tall" id="form-refund-list" rows="6">결제 후 30분 이내 취소: 전액 환불
+승인 대기 중 취소: 전액 환불
+파티 4일 전까지 취소: 전액 환불
+파티 3일 전~당일 취소: 환불 불가
+파티 당일 신청 후 취소: 환불 불가</textarea>
+            </div>
+            <div class="content-field">
+              <label class="content-label" for="form-refund-notice">환불 규정 주의사항 <span>(form.html · .refund-notice)</span></label>
+              <textarea class="content-textarea tall" id="form-refund-notice" rows="3">* 파티내에서는 촬영이 있을 수 있습니다. 파티 참여는 초상권 동의에 해당합니다. (추후 영상은 얼굴 식별이 불가한 수준으로 모자이크 처리하니 안심하세요!)</textarea>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── 완료페이지 관리 ── -->
+        <section class="admin-section" id="sec-complete">
+          <h2 class="admin-section-title">완료페이지 관리</h2>
+
+          <div class="content-group">
+            <p class="content-group-title">완료 히어로</p>
+            <div class="content-field">
+              <label class="content-label" for="complete-title">완료 타이틀 <span>(complete.html · .success-title)</span></label>
+              <textarea class="content-textarea" id="complete-title" rows="2">신청이 완료되었습니다</textarea>
+            </div>
+            <div class="content-field">
+              <label class="content-label" for="complete-sub">완료 서브텍스트 <span>(complete.html · .success-sub)</span></label>
+              <textarea class="content-textarea" id="complete-sub" rows="3">입금 완료 시 신청이 최종 확정됩니다.
+아래 계좌로 참가비를 입금해 주세요.</textarea>
+            </div>
+          </div>
+
+          <div class="content-group">
+            <p class="content-group-title">확정 안내 박스</p>
+            <div class="content-field">
+              <label class="content-label" for="complete-notice-title">안내 박스 타이틀 <span>(complete.html · .notice-box-title)</span></label>
+              <textarea class="content-textarea" id="complete-notice-title" rows="1">확정 안내</textarea>
+            </div>
+            <div class="content-field">
+              <label class="content-label" for="complete-notice-body">안내 박스 본문 <span>(complete.html · .notice-box p:last-child)</span></label>
+              <textarea class="content-textarea tall" id="complete-notice-body" rows="3">입금 완료 후 24시간 이내 문자 또는 카카오톡으로 확정 안내를 드립니다. 문의사항은 카카오톡 채널 @ODD파티로 연락주세요.</textarea>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- Save bar (visible on content sections) -->
+    <div class="save-bar" id="save-bar" style="display:none;">
+      <span>
+        <span class="save-bar-hint">변경 사항은 저장 버튼을 눌러야 반영됩니다.</span>
+        <span class="save-success-msg" id="save-success-msg">저장되었습니다!</span>
+      </span>
+      <button class="save-btn" onclick="saveContent()" type="button">저장하기</button>
+    </div>
+
+  </div><!-- /#admin-shell -->
+
+  <script>
+    /* ============================================================
+       CONSTANTS
+    ============================================================ */
+    var ADMIN_PW = 'oddparty2026';
+    var LS_AUTH  = 'oddparty_admin_auth';
+    var LS_CONTENT = 'oddparty_admin_content';
+
+    /* ============================================================
+       INIT
+    ============================================================ */
+    (function init() {
+      var authed = localStorage.getItem(LS_AUTH) === '1';
+      if (authed) {
+        showShell();
+        loadContent();
+      }
+      fixLogos();
+    })();
+
+    /* Fix logos for dark mode */
+    function fixLogos() {
+      var darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
+      function applyLogos(isDark) {
+        var lightImgs = document.querySelectorAll('.logo-light');
+        var darkImgs  = document.querySelectorAll('.logo-dark');
+        lightImgs.forEach(function(el) { el.style.display = isDark ? 'block' : 'none'; });
+        darkImgs.forEach(function(el)  { el.style.display = isDark ? 'none'  : 'block'; });
+      }
+      applyLogos(darkMQ.matches);
+      darkMQ.addEventListener('change', function(e) { applyLogos(e.matches); });
+    }
+
+    /* ============================================================
+       AUTH
+    ============================================================ */
+    function handleLogin(e) {
+      e.preventDefault();
+      var pw = document.getElementById('login-pw').value;
+      var errEl = document.getElementById('login-error');
+      if (pw === ADMIN_PW) {
+        localStorage.setItem(LS_AUTH, '1');
+        errEl.classList.remove('visible');
+        showShell();
+        loadContent();
+      } else {
+        errEl.classList.add('visible');
+        document.getElementById('login-pw').value = '';
+        document.getElementById('login-pw').focus();
+      }
+    }
+
+    function handleLogout() {
+      localStorage.removeItem(LS_AUTH);
+      document.getElementById('admin-shell').classList.remove('visible');
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('login-pw').value = '';
+    }
+
+    function showShell() {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-shell').classList.add('visible');
+    }
+
+    /* ============================================================
+       SECTION SWITCHING
+    ============================================================ */
+    function switchSection(targetId, btn) {
+      /* Hide all sections */
+      document.querySelectorAll('.admin-section').forEach(function(s) {
+        s.classList.remove('active');
+      });
+      /* Deactivate all nav buttons + tabs */
+      document.querySelectorAll('.sidebar-nav-btn, .admin-tab-btn').forEach(function(b) {
+        b.classList.remove('active');
+      });
+      /* Show target */
+      document.getElementById(targetId).classList.add('active');
+      /* Activate matching buttons in both sidebar and tabs */
+      document.querySelectorAll('[data-target="' + targetId + '"]').forEach(function(b) {
+        b.classList.add('active');
+      });
+
+      /* Show/hide save bar */
+      var saveBar = document.getElementById('save-bar');
+      saveBar.style.display = targetId === 'sec-dashboard' ? 'none' : 'flex';
+    }
+
+    /* ============================================================
+       CONTENT PERSISTENCE
+    ============================================================ */
+    var FIELD_IDS = [
+      'main-hero-title',
+      'main-hero-sub',
+      'main-about-p1',
+      'main-about-p2',
+      'main-price-info',
+      'main-cta-title',
+      'main-cta-sub',
+      'form-title',
+      'form-subtitle',
+      'form-submit-note',
+      'form-refund-title',
+      'form-refund-list',
+      'form-refund-notice',
+      'complete-title',
+      'complete-sub',
+      'complete-notice-title',
+      'complete-notice-body'
+    ];
+
+    function loadContent() {
+      try {
+        var saved = JSON.parse(localStorage.getItem(LS_CONTENT) || '{}');
+        FIELD_IDS.forEach(function(id) {
+          if (saved[id] !== undefined) {
+            var el = document.getElementById(id);
+            if (el) el.value = saved[id];
+          }
+        });
+      } catch (e) {
+        /* ignore parse errors */
+      }
+    }
+
+    function saveContent() {
+      var data = {};
+      FIELD_IDS.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) data[id] = el.value;
+      });
+      localStorage.setItem(LS_CONTENT, JSON.stringify(data));
+
+      /* Show success feedback */
+      var msg = document.getElementById('save-success-msg');
+      msg.classList.add('visible');
+      setTimeout(function() {
+        msg.classList.remove('visible');
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
