@@ -299,10 +299,12 @@ input {
    ============================================================ */
 .hero {
   position: relative;
-  height: 100vh;
-  min-height: 600px;
+  height: 100svh;
+  min-height: 520px;
+  max-height: 100svh;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 .hero-bg {
@@ -315,22 +317,24 @@ input {
   inset: 0;
   background: linear-gradient(
     to bottom,
-    rgba(10, 6, 26, 0.1) 0%,
-    rgba(10, 6, 26, 0.35) 40%,
-    rgba(10, 6, 26, 0.78) 100%
+    rgba(10, 6, 26, 0.25) 0%,
+    rgba(10, 6, 26, 0.45) 50%,
+    rgba(10, 6, 26, 0.7) 100%
   );
 }
 .hero-content {
   position: relative;
   z-index: 2;
   width: 100%;
-  padding: 0 var(--sp-xl) 52px;
+  padding: 0 var(--sp-xl);
+  text-align: center;
 }
 .hero-badges {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-sm);
   margin-bottom: var(--sp-lg);
+  justify-content: center;
 }
 .hero-badge {
   display: inline-flex;
@@ -1427,7 +1431,7 @@ input {
   .section { padding: 60px 0; }
   .price-grid { max-width: 560px; }
   .gallery-card { flex: 0 0 300px; }
-  .hero-content { padding: 0 var(--sp-2xl) 72px; }
+  .hero-content { padding: 0 var(--sp-2xl); }
   .page-wrap { padding: var(--sp-2xl) var(--sp-xl) 0; }
   .radio-grid-4 { grid-template-columns: repeat(2, 1fr); }
 }
