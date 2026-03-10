@@ -2204,14 +2204,30 @@
         msg.classList.add('visible');
         setTimeout(function() { msg.classList.remove('visible'); }, 2500);
         showToast('콘텐츠가 저장되었습니다.');
-        /* Clear pending and refresh iframes */
+
+        /* Mark all edited elements as saved (green → remove after delay) */
+        ['preview-main', 'preview-form', 'preview-complete'].forEach(function(iframeId) {
+          try {
+            var iframe = document.getElementById(iframeId);
+            var iDoc = iframe.contentDocument || iframe.contentWindow.document;
+            if (!iDoc) return;
+            iDoc.querySelectorAll('.admin-edited').forEach(function(el) {
+              el.style.outline = '2px solid rgba(46,204,113,0.8)';
+              el.style.outlineOffset = '2px';
+              setTimeout(function() {
+                el.style.outline = '';
+                el.style.outlineOffset = '';
+                el.classList.remove('admin-edited');
+              }, 2000);
+            });
+          } catch(e) {}
+        });
+
+        /* Clear pending state (don't reload iframes - values are already in the DOM) */
         pendingChanges = {};
         pendingAccountChanges = {};
         pendingScarcityOverrides = {};
         updatePendingBadge();
-        ['preview-main', 'preview-form', 'preview-complete'].forEach(function(id) {
-          refreshPreview(id);
-        });
       })
       .catch(function() {
         showToast('저장 실패', true);
@@ -2466,6 +2482,13 @@
       var iframe = document.getElementById(iframeId);
       if (iframe) {
         iframe.src = iframe.src;
+        /* After reload, re-inject saved content with delay to override iframe's own API fetch */
+        iframe.addEventListener('load', function reInject() {
+          iframe.removeEventListener('load', reInject);
+          setTimeout(function() {
+            injectSavedContentIntoIframe(iframe, iframeId);
+          }, 1500);
+        });
       }
     }
 
@@ -2686,8 +2709,10 @@
       if (iframe) {
         iframe.addEventListener('load', function() {
           injectEditableOverlay(iframe, iframeId);
-          /* Inject saved content values into iframe */
+          /* Inject saved content values into iframe immediately AND after delay
+             (to override iframe's own async API fetch that runs after load) */
           injectSavedContentIntoIframe(iframe, iframeId);
+          setTimeout(function() { injectSavedContentIntoIframe(iframe, iframeId); }, 1500);
         });
       }
     });
