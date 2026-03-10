@@ -388,7 +388,7 @@ class ApplicationStore:
         else:
             with self._sqlite_connection() as conn:
                 rows = conn.execute("SELECT * FROM discount_codes ORDER BY id DESC").fetchall()
-        return [dict(row) for row in rows]
+        return [self._serialize_discount(row) for row in rows]
 
     def create_discount_code(self, code: str, discount_type: str, discount_value: int, max_uses: int) -> dict:
         if self.kind == "postgres":
@@ -400,7 +400,7 @@ class ApplicationStore:
                 """,
                 (code, discount_type, discount_value, max_uses),
             )
-            return dict(row)
+            return self._serialize_discount(row)
         else:
             with self._sqlite_connection() as conn:
                 cursor = conn.execute(
@@ -413,7 +413,13 @@ class ApplicationStore:
                 new_id = cursor.lastrowid
             with self._sqlite_connection() as conn:
                 row = conn.execute("SELECT * FROM discount_codes WHERE id = ?", (new_id,)).fetchone()
-            return dict(row)
+            return self._serialize_discount(row)
+
+    def _serialize_discount(self, row) -> dict:
+        data = dict(row)
+        if "created_at" in data:
+            data["created_at"] = self._to_iso8601(data["created_at"])
+        return data
 
     def validate_discount_code(self, code: str) -> dict | None:
         if self.kind == "postgres":
@@ -429,7 +435,7 @@ class ApplicationStore:
                 ).fetchone()
         if not row:
             return None
-        data = dict(row)
+        data = self._serialize_discount(row)
         if data["max_uses"] > 0 and data["used_count"] >= data["max_uses"]:
             return None
         return data
