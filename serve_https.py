@@ -950,6 +950,16 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         if parsed.path == "/api/scarcity":
             result = {"dates": STORE.get_scarcity_info()}
+            # Apply manual overrides if set
+            override_raw = STORE.get_site_content_value("scarcity_override")
+            if override_raw:
+                try:
+                    overrides = json.loads(override_raw) if isinstance(override_raw, str) else override_raw
+                    for day, level in overrides.items():
+                        if day in result["dates"] and level:
+                            result["dates"][day]["level"] = level
+                except Exception:
+                    pass
             custom_text = STORE.get_site_content_value("scarcity-badge-text")
             if custom_text:
                 result["custom_badge_text"] = custom_text

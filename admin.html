@@ -2157,6 +2157,11 @@
         content[id] = pendingChanges[id];
       });
 
+      /* Include scarcity overrides in content */
+      if (Object.keys(pendingScarcityOverrides).length > 0) {
+        content['scarcity_override'] = JSON.stringify(pendingScarcityOverrides);
+      }
+
       var savePromises = [];
 
       /* Save site content */
@@ -2196,6 +2201,7 @@
         /* Clear pending and refresh iframes */
         pendingChanges = {};
         pendingAccountChanges = {};
+        pendingScarcityOverrides = {};
         updatePendingBadge();
         ['preview-main', 'preview-form', 'preview-complete'].forEach(function(id) {
           refreshPreview(id);
@@ -2453,10 +2459,45 @@
       }
     }
 
+    /* Scarcity override state */
+    var pendingScarcityOverrides = {};
+
     function injectEditableOverlay(iframe, iframeId) {
       try {
         var iDoc = iframe.contentDocument || iframe.contentWindow.document;
         if (!iDoc || !iDoc.body) return;
+
+        /* ── Disable all functional elements ── */
+        var disableStyle = iDoc.createElement('style');
+        disableStyle.textContent =
+          'a,button,.btn,.submit-btn,.copy-btn,.share-btn,.sticky-cta{pointer-events:none !important;}' +
+          'input,textarea,select{pointer-events:none !important;}' +
+          'form{pointer-events:none !important;}' +
+          '.sticky-cta{display:none !important;}' +
+          '[data-admin-editable],[data-admin-account-editable],[data-admin-scarcity]{pointer-events:auto !important;cursor:pointer !important;}';
+        iDoc.head.appendChild(disableStyle);
+
+        /* Prevent all navigation */
+        iDoc.addEventListener('click', function(e) {
+          var target = e.target;
+          if (target.hasAttribute('data-admin-editable') || target.hasAttribute('data-admin-account-editable') || target.hasAttribute('data-admin-scarcity')) return;
+          if (target.closest('[data-admin-editable]') || target.closest('[data-admin-account-editable]') || target.closest('[data-admin-scarcity]')) return;
+          e.preventDefault();
+          e.stopPropagation();
+        }, true);
+
+        /* Prevent form submissions */
+        iDoc.querySelectorAll('form').forEach(function(f) {
+          f.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
+        });
+
+        /* Disable JS-loaded scripts from running further interactions */
+        iDoc.querySelectorAll('input,textarea,select,button').forEach(function(el) {
+          if (!el.closest('[data-admin-editable]') && !el.closest('[data-admin-account-editable]')) {
+            el.setAttribute('tabindex', '-1');
+            el.disabled = true;
+          }
+        });
 
         /* Hide scrollbar inside iframe */
         var scrollStyle = iDoc.createElement('style');
@@ -2475,8 +2516,84 @@
           '[data-admin-account-editable]{cursor:pointer;transition:outline .2s,background .2s;border-radius:4px;}' +
           '[data-admin-account-editable]:hover{outline:2px dashed rgba(52,152,219,0.5);outline-offset:2px;}' +
           '[data-admin-account-editable]:focus{outline:2px solid rgba(52,152,219,0.8);outline-offset:2px;background:rgba(52,152,219,0.08);}' +
-          '[data-admin-account-editable].admin-edited{outline:2px solid rgba(46,204,113,0.6);outline-offset:2px;}';
+          '[data-admin-account-editable].admin-edited{outline:2px solid rgba(46,204,113,0.6);outline-offset:2px;}' +
+          /* Scarcity dropdown styles */
+          '.admin-scarcity-dropdown{position:absolute;z-index:9999;background:#1e1e2e;border:1.5px solid rgba(167,139,250,0.4);border-radius:8px;padding:4px 0;box-shadow:0 8px 24px rgba(0,0,0,0.4);min-width:100px;}' +
+          '.admin-scarcity-option{padding:6px 14px;font-size:12px;color:#e0e0e0;cursor:pointer;transition:background .15s;white-space:nowrap;}' +
+          '.admin-scarcity-option:hover{background:rgba(167,139,250,0.15);}' +
+          '.admin-scarcity-option.selected{color:#a78bfa;font-weight:700;}' +
+          '[data-admin-scarcity]{pointer-events:auto !important;cursor:pointer !important;position:relative;}' +
+          '[data-admin-scarcity]:hover{outline:2px dashed rgba(241,196,15,0.6);outline-offset:2px;}' +
+          '[data-admin-scarcity].admin-edited{outline:2px solid rgba(46,204,113,0.6);outline-offset:2px;}';
         iDoc.head.appendChild(style);
+
+        /* ── Scarcity badge dropdown (form page only) ── */
+        if (iframeId === 'preview-form') {
+          var scarcityIds = ['scarcity-금요일', 'scarcity-토요일', 'scarcity-일요일'];
+          var scarcityLevels = ['여유', '잔여 소수', '마감임박', '마감'];
+          scarcityIds.forEach(function(badgeId) {
+            var badge = iDoc.getElementById(badgeId);
+            if (!badge) return;
+            badge.setAttribute('data-admin-scarcity', badgeId);
+            badge.setAttribute('title', '클릭하여 상태 변경');
+            badge.style.pointerEvents = 'auto';
+            badge.style.cursor = 'pointer';
+
+            badge.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              /* Remove existing dropdown */
+              var existing = iDoc.querySelector('.admin-scarcity-dropdown');
+              if (existing) { existing.remove(); return; }
+
+              var currentLevel = badge.textContent.trim() || '여유';
+              var dropdown = iDoc.createElement('div');
+              dropdown.className = 'admin-scarcity-dropdown';
+
+              scarcityLevels.forEach(function(level) {
+                var opt = iDoc.createElement('div');
+                opt.className = 'admin-scarcity-option' + (level === currentLevel ? ' selected' : '');
+                opt.textContent = level;
+                opt.addEventListener('click', function(ev) {
+                  ev.stopPropagation();
+                  badge.textContent = level;
+                  /* Update badge class */
+                  if (level === '마감') {
+                    badge.className = 'radio-card-badge closed';
+                  } else if (level === '마감임박') {
+                    badge.className = 'radio-card-badge scarcity urgent';
+                  } else if (level === '잔여 소수') {
+                    badge.className = 'radio-card-badge scarcity';
+                  } else {
+                    badge.className = 'radio-card-badge available';
+                  }
+                  badge.setAttribute('data-admin-scarcity', badgeId);
+                  badge.classList.add('admin-edited');
+                  /* Track override */
+                  var dayName = badgeId.replace('scarcity-', '');
+                  pendingScarcityOverrides[dayName] = level;
+                  updatePendingBadge();
+                  dropdown.remove();
+                });
+                dropdown.appendChild(opt);
+              });
+
+              /* Position dropdown below badge */
+              var rect = badge.getBoundingClientRect();
+              dropdown.style.position = 'fixed';
+              dropdown.style.left = rect.left + 'px';
+              dropdown.style.top = (rect.bottom + 4) + 'px';
+              iDoc.body.appendChild(dropdown);
+
+              /* Close on click outside */
+              var closeHandler = function() {
+                dropdown.remove();
+                iDoc.removeEventListener('click', closeHandler);
+              };
+              setTimeout(function() { iDoc.addEventListener('click', closeHandler); }, 10);
+            });
+          });
+        }
 
         /* Mark content editable fields */
         var contentIds = IFRAME_EDITABLE_MAP[iframeId] || [];
@@ -2545,7 +2662,7 @@
     }
 
     function updatePendingBadge() {
-      var count = Object.keys(pendingChanges).length + Object.keys(pendingAccountChanges).length;
+      var count = Object.keys(pendingChanges).length + Object.keys(pendingAccountChanges).length + Object.keys(pendingScarcityOverrides).length;
       var badge = document.getElementById('pending-badge');
       if (badge) {
         badge.textContent = count + '개 변경사항';
