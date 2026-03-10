@@ -52,6 +52,23 @@ if (data) {
 }
 
 /* =============================================
+   DYNAMIC SITE CONTENT FROM ADMIN
+   ============================================= */
+(async function loadSiteContent() {
+  try {
+    const res = await fetch('https://oddparty-api-production.up.railway.app/api/site-content');
+    if (!res.ok) return;
+    const data = await res.json();
+    const content = data.content || {};
+    Object.entries(content).forEach(([key, val]) => {
+      if (!val || !key.startsWith('complete-')) return;
+      const el = document.getElementById(key);
+      if (el) el.innerHTML = val.replace(/\n/g, '<br/>');
+    });
+  } catch { /* no backend */ }
+})();
+
+/* =============================================
    COPY ACCOUNT
    ============================================= */
 function copyAccount() {

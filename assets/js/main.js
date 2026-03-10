@@ -194,6 +194,21 @@ if (track) {
   });
 })();
 
+/* --- Dynamic site content from admin --- */
+(async function loadSiteContent() {
+  try {
+    const res = await fetch('https://oddparty-api-production.up.railway.app/api/site-content');
+    if (!res.ok) return;
+    const data = await res.json();
+    const content = data.content || {};
+    Object.entries(content).forEach(([key, val]) => {
+      if (!val || key === 'pricing' || key === 'scarcity-badge-text' || key === 'sticky-cta-text' || key === 'instagram-id') return;
+      const el = document.getElementById(key);
+      if (el) el.innerHTML = val.replace(/\n/g, '<br/>');
+    });
+  } catch { /* no backend */ }
+})();
+
 /* --- Scroll fade-up --- */
 const fadeObserver = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
