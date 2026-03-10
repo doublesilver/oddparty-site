@@ -2173,8 +2173,9 @@
         /* Fetch current account info first, then merge */
         savePromises.push(
           fetch(API_BASE + '/api/admin/account', { headers: authHeaders() })
-          .then(function(r) { return r.ok ? r.json() : { bank: '농협은행', account_number: '351-0948-4473-43', holder: '이@봄' }; })
-          .then(function(current) {
+          .then(function(r) { return r.ok ? r.json() : { account: { bank: '농협은행', account_number: '351-0948-4473-43', holder: '이@봄' } }; })
+          .then(function(data) {
+            var current = data.account || { bank: '농협은행', account_number: '351-0948-4473-43', holder: '이@봄' };
             var merged = Object.assign({}, current, pendingAccountChanges);
             return fetch(API_BASE + '/api/admin/account', {
               method: 'POST',
@@ -2583,8 +2584,9 @@
     function loadAccountIntoIframes() {
       fetch(API_BASE + '/api/account')
       .then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(data) {
-        if (!data) return;
+      .then(function(resp) {
+        if (!resp) return;
+        var acct = resp.account || resp;
         ['preview-form', 'preview-complete'].forEach(function(iframeId) {
           try {
             var iframe = document.getElementById(iframeId);
@@ -2595,9 +2597,9 @@
               var el = iDoc.getElementById(elId);
               if (!el) return;
               var key = accountMap[elId];
-              if (key === 'bank' && data.bank) el.textContent = data.bank;
-              if (key === 'account_number' && data.account_number) el.textContent = data.account_number;
-              if (key === 'holder' && data.holder) el.textContent = '예금주: ' + data.holder;
+              if (key === 'bank' && acct.bank) el.textContent = acct.bank;
+              if (key === 'account_number' && acct.account_number) el.textContent = acct.account_number;
+              if (key === 'holder' && acct.holder) el.textContent = '예금주: ' + acct.holder;
             });
           } catch(e) { /* cross-origin */ }
         });
