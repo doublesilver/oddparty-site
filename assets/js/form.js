@@ -179,28 +179,6 @@ phoneInput.addEventListener('input', () => {
 });
 
 /* =============================================
-   PHOTO PREVIEW
-   ============================================= */
-const photoInput = document.getElementById('field-photo');
-if (photoInput) {
-  photoInput.addEventListener('change', () => {
-    const file = photoInput.files[0];
-    if (!file) return;
-    const uploadArea = photoInput.closest('.upload-area') || photoInput.parentElement;
-    let preview = uploadArea.querySelector('.photo-preview-thumb');
-    if (!preview) {
-      preview = document.createElement('img');
-      preview.className = 'photo-preview-thumb';
-      preview.style.cssText = 'max-width:100%;max-height:120px;border-radius:8px;margin-top:8px;display:block;';
-      uploadArea.appendChild(preview);
-    }
-    const reader = new FileReader();
-    reader.onload = (e) => { preview.src = e.target.result; };
-    reader.readAsDataURL(file);
-  });
-}
-
-/* =============================================
    FORM VALIDATION & SUBMIT
    ============================================= */
 function showError(id, show) {
@@ -239,11 +217,6 @@ document.getElementById('party-form').addEventListener('submit', async (e) => {
 
   showError('err-date', !date);
   if (!date) valid = false;
-
-  const photoInputEl = document.getElementById('field-photo');
-  const hasPhoto = photoInputEl && photoInputEl.files && photoInputEl.files.length > 0;
-  showError('err-photo', !hasPhoto);
-  if (!hasPhoto) valid = false;
 
   if (!valid) {
     const firstErr = document.querySelector('.field-error.show');

@@ -1,0 +1,12 @@
+# local/runtime artifacts
+__pycache__/
+*.pyc
+*.pem
+.cert/
+data/
+
+# Secrets
+.admin_token
+
+# OS / editor files
+.DS_Store
