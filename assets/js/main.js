@@ -1,3 +1,16 @@
+/* --- Apply saved logo position --- */
+(function() {
+  const heroBg = document.querySelector('.hero-bg');
+  if (!heroBg) return;
+  try {
+    const pos = JSON.parse(localStorage.getItem('oddparty_logo_pos'));
+    if (pos) {
+      heroBg.style.backgroundPosition = (pos.x ?? 50) + '% ' + (pos.y ?? -10) + '%';
+      heroBg.style.backgroundSize = pos.size || 'contain';
+    }
+  } catch { /* no saved position */ }
+})();
+
 /* --- Sticky CTA visibility --- */
 const hero = document.getElementById('hero');
 const stickyCta = document.getElementById('sticky-cta');

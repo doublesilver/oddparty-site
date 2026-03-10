@@ -573,6 +573,99 @@
     }
     .save-success-msg.visible { display: inline; }
 
+    /* ── Logo position controls ── */
+    .logo-pos-controls {
+      display: flex;
+      gap: var(--sp-lg);
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .logo-pos-preview {
+      width: 160px;
+      height: 200px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      position: relative;
+      overflow: hidden;
+      background-image: url('assets/images/logo-dark.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: 50% -10%;
+      flex-shrink: 0;
+    }
+    .logo-pos-marker {
+      position: absolute;
+      width: 12px; height: 12px;
+      background: var(--primary);
+      border: 2px solid #fff;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      left: 50%; top: 40%;
+      pointer-events: none;
+      box-shadow: 0 0 6px rgba(167,139,250,0.6);
+    }
+    .logo-pos-sliders {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .logo-pos-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-pos-label {
+      font-size: var(--fs-sm);
+      color: var(--muted);
+      min-width: 60px;
+    }
+    .logo-pos-range {
+      flex: 1;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+    .logo-pos-val {
+      font-size: var(--fs-xs);
+      color: var(--ink);
+      font-weight: 600;
+      min-width: 42px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .logo-pos-select {
+      flex: 1;
+      padding: 6px 10px;
+      font-family: var(--font);
+      font-size: var(--fs-sm);
+      color: var(--ink);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+    }
+    .logo-pos-save-btn, .logo-pos-reset-btn {
+      padding: 8px 16px;
+      font-family: var(--font);
+      font-size: var(--fs-sm);
+      font-weight: 600;
+      border: none;
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .logo-pos-save-btn {
+      background: var(--primary);
+      color: #fff;
+    }
+    .logo-pos-reset-btn {
+      background: var(--bg-subtle);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .logo-pos-save-btn:hover, .logo-pos-reset-btn:hover { opacity: 0.85; }
+
     /* ── Capacity section ── */
     .capacity-grid {
       display: grid;
@@ -925,6 +1018,43 @@
           <!-- 히어로 -->
           <div class="content-group">
             <p class="content-group-title">히어로 섹션</p>
+
+            <!-- 로고 위치 조정 -->
+            <div class="content-field">
+              <label class="content-label">로고 이미지 위치 조정</label>
+              <div class="logo-pos-controls">
+                <div class="logo-pos-preview" id="logo-pos-preview">
+                  <div class="logo-pos-marker" id="logo-pos-marker"></div>
+                </div>
+                <div class="logo-pos-sliders">
+                  <div class="logo-pos-slider-row">
+                    <label class="logo-pos-label" for="logo-pos-x">좌우 (X)</label>
+                    <input type="range" id="logo-pos-x" min="0" max="100" value="50" class="logo-pos-range" />
+                    <span class="logo-pos-val" id="logo-pos-x-val">50%</span>
+                  </div>
+                  <div class="logo-pos-slider-row">
+                    <label class="logo-pos-label" for="logo-pos-y">상하 (Y)</label>
+                    <input type="range" id="logo-pos-y" min="-30" max="100" value="-10" class="logo-pos-range" />
+                    <span class="logo-pos-val" id="logo-pos-y-val">-10%</span>
+                  </div>
+                  <div class="logo-pos-slider-row">
+                    <label class="logo-pos-label" for="logo-pos-size">크기</label>
+                    <select id="logo-pos-size" class="logo-pos-select">
+                      <option value="contain">맞춤 (contain)</option>
+                      <option value="cover">채우기 (cover)</option>
+                      <option value="60%">60%</option>
+                      <option value="70%">70%</option>
+                      <option value="80%">80%</option>
+                      <option value="90%">90%</option>
+                      <option value="100%">100%</option>
+                    </select>
+                  </div>
+                  <button class="logo-pos-save-btn" id="logo-pos-save" type="button">위치 저장</button>
+                  <button class="logo-pos-reset-btn" id="logo-pos-reset" type="button">초기화</button>
+                </div>
+              </div>
+            </div>
+
             <div class="content-field">
               <label class="content-label" for="main-hero-title">히어로 타이틀 <span>(index.html · .hero-title)</span></label>
               <textarea class="content-textarea" id="main-hero-title" rows="2"></textarea>
@@ -1546,6 +1676,67 @@
 
     function bindContent() {
       document.getElementById('save-content-btn').addEventListener('click', saveContent);
+      bindLogoPos();
+    }
+
+    /* ── Logo position adjustment ── */
+    var LS_LOGO_POS = 'oddparty_logo_pos';
+
+    function bindLogoPos() {
+      var xSlider = document.getElementById('logo-pos-x');
+      var ySlider = document.getElementById('logo-pos-y');
+      var sizeSelect = document.getElementById('logo-pos-size');
+      var xVal = document.getElementById('logo-pos-x-val');
+      var yVal = document.getElementById('logo-pos-y-val');
+      var preview = document.getElementById('logo-pos-preview');
+      var marker = document.getElementById('logo-pos-marker');
+
+      // Load saved values
+      var saved = JSON.parse(localStorage.getItem(LS_LOGO_POS) || 'null');
+      if (saved) {
+        xSlider.value = saved.x != null ? saved.x : 50;
+        ySlider.value = saved.y != null ? saved.y : -10;
+        if (saved.size) sizeSelect.value = saved.size;
+      }
+
+      function updatePreview() {
+        var x = parseInt(xSlider.value);
+        var y = parseInt(ySlider.value);
+        var size = sizeSelect.value;
+        xVal.textContent = x + '%';
+        yVal.textContent = y + '%';
+        preview.style.backgroundPosition = x + '% ' + y + '%';
+        preview.style.backgroundSize = size;
+        // Update marker position (map ranges to preview area)
+        marker.style.left = x + '%';
+        marker.style.top = Math.max(0, Math.min(100, ((y + 30) / 130) * 100)) + '%';
+      }
+
+      xSlider.addEventListener('input', updatePreview);
+      ySlider.addEventListener('input', updatePreview);
+      sizeSelect.addEventListener('change', updatePreview);
+      updatePreview();
+
+      // Save
+      document.getElementById('logo-pos-save').addEventListener('click', function() {
+        var posData = {
+          x: parseInt(xSlider.value),
+          y: parseInt(ySlider.value),
+          size: sizeSelect.value
+        };
+        localStorage.setItem(LS_LOGO_POS, JSON.stringify(posData));
+        showToast('로고 위치가 저장되었습니다.');
+      });
+
+      // Reset
+      document.getElementById('logo-pos-reset').addEventListener('click', function() {
+        xSlider.value = 50;
+        ySlider.value = -10;
+        sizeSelect.value = 'contain';
+        updatePreview();
+        localStorage.removeItem(LS_LOGO_POS);
+        showToast('로고 위치가 초기화되었습니다.');
+      });
     }
 
     function loadSiteContent() {
