@@ -775,6 +775,51 @@
     .bottom-nav-btn .bottom-nav-icon { font-size: 1.2rem; }
     .bottom-nav-btn.active { color: var(--primary); }
 
+    /* ── Live editor layout ── */
+    .live-editor-wrap {
+      display: flex; gap: var(--sp-xl); align-items: flex-start;
+    }
+    .phone-preview-col {
+      position: sticky; top: calc(var(--header-h) + var(--sp-lg));
+      flex-shrink: 0;
+    }
+    .phone-frame {
+      width: 320px; height: 580px;
+      background: #000; border-radius: 36px;
+      padding: 12px; box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+      position: relative; overflow: hidden;
+    }
+    .phone-notch {
+      width: 100px; height: 22px;
+      background: #000; border-radius: 0 0 14px 14px;
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      z-index: 2;
+    }
+    .phone-screen {
+      width: 100%; height: 100%;
+      border: none; border-radius: 24px;
+      background: var(--bg);
+    }
+    .editor-col {
+      flex: 1; min-width: 0;
+      max-height: calc(100vh - var(--header-h) - 80px);
+      overflow-y: auto;
+      padding-right: var(--sp-sm);
+    }
+    .editor-col::-webkit-scrollbar { width: 4px; }
+    .editor-col::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    @media (max-width: 1100px) {
+      .live-editor-wrap { flex-direction: column; }
+      .phone-preview-col { position: relative; top: 0; align-self: center; }
+      .phone-frame { width: 280px; height: 500px; }
+      .editor-col { max-height: none; }
+    }
+    @media (max-width: 600px) {
+      .phone-frame { width: 240px; height: 430px; border-radius: 28px; padding: 8px; }
+      .phone-screen { border-radius: 20px; }
+    }
+
     /* ── Content sub-tabs ── */
     .content-subtabs {
       display: flex; gap: 0; margin-bottom: var(--sp-xl);
@@ -1125,154 +1170,173 @@
           <span class="save-msg" id="price-save-msg"></span>
         </section>
 
-        <!-- ── 콘텐츠 관리 ── -->
+        <!-- ── 콘텐츠 관리 (라이브 프리뷰) ── -->
         <section class="admin-section" id="sec-content">
           <h2 class="admin-section-title">사이트 문구 수정</h2>
+          <p style="color:var(--muted);font-size:var(--fs-sm);margin-bottom:var(--sp-lg);">실시간 미리보기를 보면서 문구를 수정할 수 있습니다. 수정 후 반드시 저장 버튼을 눌러주세요.</p>
 
           <!-- Sub-tabs -->
           <div class="content-subtabs">
-            <button class="content-subtab active" data-panel="content-panel-main" type="button">메인 페이지</button>
-            <button class="content-subtab" data-panel="content-panel-form" type="button">신청 페이지</button>
-            <button class="content-subtab" data-panel="content-panel-complete" type="button">완료 페이지</button>
+            <button class="content-subtab active" data-panel="content-panel-main" data-preview="index.html" type="button">메인 페이지</button>
+            <button class="content-subtab" data-panel="content-panel-form" data-preview="form.html" type="button">신청 페이지</button>
+            <button class="content-subtab" data-panel="content-panel-complete" data-preview="complete.html" type="button">완료 페이지</button>
           </div>
 
-          <!-- 메인 페이지 패널 -->
-          <div class="content-subpanel active" id="content-panel-main">
+          <!-- 라이브 프리뷰 레이아웃 -->
+          <div class="live-editor-wrap">
 
-          <!-- 히어로 -->
-          <div class="content-group">
-            <p class="content-group-title">메인 페이지 상단 (히어로)</p>
+            <!-- 프리뷰 (폰 목업) -->
+            <div class="phone-preview-col">
+              <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <iframe id="preview-iframe" src="index.html" class="phone-screen"></iframe>
+              </div>
+              <div style="text-align:center;margin-top:var(--sp-sm);">
+                <button class="dash-btn" type="button" id="preview-refresh-btn" style="font-size:var(--fs-xs);">↻ 새로고침</button>
+                <a href="index.html" target="_blank" rel="noopener" class="dash-btn" id="preview-newtab-btn" style="font-size:var(--fs-xs);text-decoration:none;margin-left:4px;">↗ 새 탭</a>
+              </div>
+            </div>
 
-            <div class="content-field">
-              <label class="content-label" for="main-hero-title">메인 제목 <span>메인 페이지 상단에 크게 표시되는 제목입니다</span></label>
-              <textarea class="content-textarea" id="main-hero-title" rows="2" placeholder="낯선 사람들이 만나는 밤"></textarea>
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="main-hero-sub">메인 부제목 <span>메인 제목 아래에 표시되는 한 줄 소개글입니다</span></label>
-              <textarea class="content-textarea" id="main-hero-sub" rows="2" placeholder="20~30대 소셜 파티 · ODD PARTY"></textarea>
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="scarcity-badge-text">잔여석 배지 문구 <span>(비워두면 참여자 수 기반 자동 표시)</span></label>
-              <input class="content-textarea" type="text" id="scarcity-badge-text" placeholder="예: 이번 주 파티 잔여석 마감 임박!" style="height:auto;padding:10px 14px;" />
-              <p style="font-size:var(--fs-xs);color:var(--muted);margin-top:4px;">
-                자동 단계: 여유 → 잔여 소수 → 마감 임박 → 마감 (정원 관리 설정 기반)
-              </p>
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="sticky-cta-text">하단 고정 CTA 문구 <span>(비워두면 잔여석 배지 문구와 동일)</span></label>
-              <input class="content-textarea" type="text" id="sticky-cta-text" placeholder="예: 이번 주 파티 마감 임박!" style="height:auto;padding:10px 14px;" />
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="instagram-id">인스타그램 아이디 <span>(완료 페이지 팔로우 버튼에 적용)</span></label>
-              <input class="content-textarea" type="text" id="instagram-id" placeholder="예: odd_party" style="height:auto;padding:10px 14px;" />
-            </div>
-          </div>
+            <!-- 에디터 -->
+            <div class="editor-col">
 
-          <!-- About -->
-          <div class="content-group">
-            <p class="content-group-title">파티 소개</p>
-            <div class="content-field">
-              <label class="content-label" for="main-about-p1">파티 소개 첫번째 문단 <span>메인 페이지 'ODD PARTY란?' 섹션의 첫번째 문단입니다</span></label>
-              <textarea class="content-textarea tall" id="main-about-p1" rows="4" placeholder="ODD PARTY는 혼자 가도 어색하지 않은 소셜 파티입니다. 직장·학교·동네 어디에서도 만날 수 없는 새로운 인연을 만들어 드립니다. 처음 만나는 사이도 자연스럽게 어울릴 수 있도록, 감각적인 공간과 즐거운 프로그램을 준비했습니다."></textarea>
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="main-about-p2">파티 소개 두번째 문단 <span>메인 페이지 'ODD PARTY란?' 섹션의 두번째 문단입니다</span></label>
-              <textarea class="content-textarea tall" id="main-about-p2" rows="4" placeholder="매주 금·토·일 진행되며, 서울 건대 / 영등포 두 지점에서 만나볼 수 있습니다. 20~30대라면 누구나 편하게 신청하실 수 있어요. 혼자 오셔도 충분히 즐길 수 있습니다."></textarea>
-            </div>
-          </div>
+              <!-- 메인 페이지 패널 -->
+              <div class="content-subpanel active" id="content-panel-main">
+                <div class="content-group">
+                  <p class="content-group-title">히어로 영역</p>
+                  <div class="content-field">
+                    <label class="content-label" for="main-hero-title">메인 제목</label>
+                    <textarea class="content-textarea" id="main-hero-title" rows="2" data-preview-id="main-hero-title" placeholder="낯선 사람들이 만나는 밤"></textarea>
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="main-hero-sub">메인 부제목</label>
+                    <textarea class="content-textarea" id="main-hero-sub" rows="2" data-preview-id="main-hero-sub" placeholder="20~30대 소셜 파티 · ODD PARTY"></textarea>
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="scarcity-badge-text">잔여석 배지 문구 <span>(비워두면 자동)</span></label>
+                    <input class="content-textarea" type="text" id="scarcity-badge-text" placeholder="예: 이번 주 파티 잔여석 마감 임박!" style="height:auto;padding:10px 14px;" />
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="sticky-cta-text">하단 고정 CTA 문구</label>
+                    <input class="content-textarea" type="text" id="sticky-cta-text" placeholder="예: 이번 주 파티 마감 임박!" style="height:auto;padding:10px 14px;" />
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="instagram-id">인스타그램 아이디</label>
+                    <input class="content-textarea" type="text" id="instagram-id" placeholder="예: odd_party" style="height:auto;padding:10px 14px;" />
+                  </div>
+                </div>
+                <div class="content-group">
+                  <p class="content-group-title">파티 소개</p>
+                  <div class="content-field">
+                    <label class="content-label" for="main-about-p1">소개 첫번째 문단</label>
+                    <textarea class="content-textarea" id="main-about-p1" rows="3" data-preview-id="main-about-p1" placeholder="ODD PARTY는 혼자 가도 어색하지 않은 소셜 파티입니다."></textarea>
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="main-about-p2">소개 두번째 문단</label>
+                    <textarea class="content-textarea" id="main-about-p2" rows="3" data-preview-id="main-about-p2" placeholder="매주 금·토·일 진행되며, 서울 건대 / 영등포 두 지점에서 만나볼 수 있습니다."></textarea>
+                  </div>
+                </div>
+                <div class="content-group">
+                  <p class="content-group-title">가격 안내</p>
+                  <div class="content-field">
+                    <label class="content-label" for="main-price-info">가격 안내 설명</label>
+                    <textarea class="content-textarea" id="main-price-info" rows="2" data-preview-id="main-price-info" placeholder="주류및 음료는 모든 지점 제공됩니다!"></textarea>
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="main-price-note-건대">건대점 가격 카드 메모</label>
+                    <input class="content-textarea" type="text" id="main-price-note-건대" data-preview-id="main-price-note-건대" placeholder="포틀럭 포함" style="height:auto;padding:10px 14px;" />
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="main-price-note-영등포">영등포점 가격 카드 메모</label>
+                    <input class="content-textarea" type="text" id="main-price-note-영등포" data-preview-id="main-price-note-영등포" placeholder="안주 포함" style="height:auto;padding:10px 14px;" />
+                  </div>
+                </div>
+                <div class="content-group">
+                  <p class="content-group-title">신청 유도 영역</p>
+                  <div class="content-field">
+                    <label class="content-label" for="main-cta-title">신청 유도 제목</label>
+                    <textarea class="content-textarea" id="main-cta-title" rows="2" data-preview-id="main-cta-title" placeholder="다음 파티에 초대합니다"></textarea>
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="main-cta-sub">신청 유도 설명</label>
+                    <textarea class="content-textarea" id="main-cta-sub" rows="2" data-preview-id="main-cta-sub" placeholder="매 회차 소수 정예로 진행됩니다."></textarea>
+                  </div>
+                </div>
+              </div>
 
-          <!-- 가격 -->
-          <div class="content-group">
-            <p class="content-group-title">가격 안내</p>
-            <div class="content-field">
-              <label class="content-label" for="main-price-info">가격 안내 설명 <span>지점별 가격 카드 아래에 표시되는 안내 문구입니다</span></label>
-              <textarea class="content-textarea tall" id="main-price-info" rows="3" placeholder="주류및 음료는 모든 지점 제공됩니다! (한잔등 제한 없음) 할인코드 보유 시 신청 폼 입력란에 기재해 주세요. 할인은 최종 결제 금액에서 차감됩니다."></textarea>
-            </div>
-          </div>
+              <!-- 신청 페이지 패널 -->
+              <div class="content-subpanel" id="content-panel-form">
+                <div class="content-group">
+                  <p class="content-group-title">신청 페이지 상단</p>
+                  <div class="content-field">
+                    <label class="content-label" for="form-title">페이지 제목</label>
+                    <textarea class="content-textarea" id="form-title" rows="2" data-preview-id="form-title" placeholder="파티 초대 신청"></textarea>
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="form-subtitle">부제목</label>
+                    <textarea class="content-textarea" id="form-subtitle" rows="2" data-preview-id="form-subtitle" placeholder="신청서를 검토 후 확정 안내를 드립니다."></textarea>
+                  </div>
+                </div>
+                <div class="content-group">
+                  <p class="content-group-title">참여 규칙</p>
+                  <div class="content-field">
+                    <label class="content-label" for="form-rules-title">규칙 제목</label>
+                    <input class="content-textarea" type="text" id="form-rules-title" data-preview-id="form-rules-title" placeholder="ODD PARTY 참여 규칙" style="height:auto;padding:10px 14px;" />
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="form-rules-list">규칙 항목 <span>(줄바꿈으로 구분)</span></label>
+                    <textarea class="content-textarea tall" id="form-rules-list" rows="5" data-preview-id="form-rules-list" placeholder="노쇼(No-show) 시 향후 파티 참여가 제한됩니다.&#10;다른 참가자에게 불쾌감을 주는 행동은 퇴장 조치될 수 있습니다.&#10;과도한 음주는 삼가주세요.&#10;파티 중 촬영이 진행될 수 있으며, 참여 시 초상권 사용에 동의하는 것으로 간주됩니다."></textarea>
+                  </div>
+                </div>
+                <div class="content-group">
+                  <p class="content-group-title">제출 안내 및 환불 규정</p>
+                  <div class="content-field">
+                    <label class="content-label" for="form-submit-note">제출 버튼 아래 안내</label>
+                    <textarea class="content-textarea" id="form-submit-note" rows="2" data-preview-id="form-submit-note" placeholder="접수 후 입금 완료 시 신청이 확정됩니다."></textarea>
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="form-refund-title">환불 규정 제목</label>
+                    <input class="content-textarea" type="text" id="form-refund-title" data-preview-id="form-refund-title" placeholder="참가비 환불 규정" style="height:auto;padding:10px 14px;" />
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="form-refund-list">환불 규정 항목 <span>(줄바꿈으로 구분)</span></label>
+                    <textarea class="content-textarea tall" id="form-refund-list" rows="4" data-preview-id="form-refund-list" placeholder="파티 4일 전까지 취소: 전액 환불&#10;파티 3일 전~당일 취소: 환불 불가"></textarea>
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="form-refund-notice">환불 규정 추가 안내</label>
+                    <textarea class="content-textarea" id="form-refund-notice" rows="2" data-preview-id="form-refund-notice" placeholder="* 파티 참여는 초상권 동의에 해당합니다."></textarea>
+                  </div>
+                </div>
+              </div>
 
-          <!-- CTA -->
-          <div class="content-group">
-            <p class="content-group-title">신청 유도 영역</p>
-            <div class="content-field">
-              <label class="content-label" for="main-cta-title">신청 유도 제목 <span>메인 페이지 하단 '다음 파티에 초대합니다' 영역의 제목입니다</span></label>
-              <textarea class="content-textarea" id="main-cta-title" rows="2" placeholder="다음 파티에 초대합니다"></textarea>
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="main-cta-sub">신청 유도 설명 <span>신청 유도 제목 아래의 설명 문구입니다</span></label>
-              <textarea class="content-textarea" id="main-cta-sub" rows="3" placeholder="매 회차 소수 정예로 진행됩니다. 지금 바로 초대를 신청하세요!"></textarea>
-            </div>
-          </div>
+              <!-- 완료 페이지 패널 -->
+              <div class="content-subpanel" id="content-panel-complete">
+                <div class="content-group">
+                  <p class="content-group-title">신청 완료 상단</p>
+                  <div class="content-field">
+                    <label class="content-label" for="complete-title">완료 제목</label>
+                    <textarea class="content-textarea" id="complete-title" rows="2" data-preview-id="complete-title" placeholder="ODD PARTY에 이름이 올랐습니다"></textarea>
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="complete-sub">완료 안내</label>
+                    <textarea class="content-textarea" id="complete-sub" rows="2" data-preview-id="complete-sub" placeholder="축하합니다! 초대 신청이 접수되었습니다."></textarea>
+                  </div>
+                </div>
+                <div class="content-group">
+                  <p class="content-group-title">확정 안내 박스</p>
+                  <div class="content-field">
+                    <label class="content-label" for="complete-notice-title">안내 제목</label>
+                    <input class="content-textarea" type="text" id="complete-notice-title" data-preview-id="complete-notice-title" placeholder="ℹ️ 확정 안내" style="height:auto;padding:10px 14px;" />
+                  </div>
+                  <div class="content-field">
+                    <label class="content-label" for="complete-notice-body">안내 내용</label>
+                    <textarea class="content-textarea tall" id="complete-notice-body" rows="3" data-preview-id="complete-notice-body" placeholder="입금 완료 후 24시간 이내 문자 또는 카카오톡으로 확정 안내를 드립니다."></textarea>
+                  </div>
+                </div>
+              </div>
 
-          <!-- 미리보기 버튼 -->
-          <div style="margin-top:var(--sp-md);margin-bottom:var(--sp-md);">
-            <a href="index.html" target="_blank" rel="noopener" class="dash-btn" style="display:inline-flex;gap:6px;align-items:center;text-decoration:none;">👁 메인 페이지 미리보기</a>
-          </div>
-          </div><!-- /content-panel-main -->
-
-          <!-- 신청 페이지 패널 -->
-          <div class="content-subpanel" id="content-panel-form">
-          <div class="content-group">
-            <p class="content-group-title">신청 페이지</p>
-            <div class="content-field">
-              <label class="content-label" for="form-title">신청 페이지 제목 <span>신청 페이지 상단에 표시되는 제목입니다</span></label>
-              <textarea class="content-textarea" id="form-title" rows="2" placeholder="파티 초대 신청"></textarea>
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="form-subtitle">신청 페이지 부제목 <span>신청 페이지 제목 아래의 안내 문구입니다</span></label>
-              <textarea class="content-textarea" id="form-subtitle" rows="2" placeholder="신청서를 검토 후 확정 안내를 드립니다."></textarea>
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="form-submit-note">제출 버튼 아래 안내 <span>신청하기 버튼 아래에 표시되는 안내 문구입니다</span></label>
-              <textarea class="content-textarea" id="form-submit-note" rows="3" placeholder="접수 후 입금 완료 시 신청이 확정됩니다. 계좌: 농협 351-0948-4473-43 (이@봄)"></textarea>
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="form-refund-title">환불 규정 제목 <span>신청 페이지 하단 환불 규정의 제목입니다</span></label>
-              <textarea class="content-textarea" id="form-refund-title" rows="1" placeholder="참가비 환불 규정"></textarea>
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="form-refund-list">환불 규정 항목 <span>각 규정을 줄바꿈으로 구분하여 입력하세요</span></label>
-              <textarea class="content-textarea tall" id="form-refund-list" rows="6" placeholder="결제 후 30분 이내 취소: 전액 환불&#10;승인 대기 중 취소: 전액 환불&#10;파티 4일 전까지 취소: 전액 환불&#10;파티 3일 전~당일 취소: 환불 불가&#10;파티 당일 신청 후 취소: 환불 불가"></textarea>
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="form-refund-notice">환불 규정 추가 안내 <span>환불 규정 아래에 표시되는 추가 안내 문구입니다</span></label>
-              <textarea class="content-textarea tall" id="form-refund-notice" rows="3" placeholder="* 파티내에서는 촬영이 있을 수 있습니다. 파티 참여는 초상권 동의에 해당합니다."></textarea>
-            </div>
-          </div>
-
-          <!-- 미리보기 버튼 -->
-          <div style="margin-top:var(--sp-md);margin-bottom:var(--sp-md);">
-            <a href="form.html" target="_blank" rel="noopener" class="dash-btn" style="display:inline-flex;gap:6px;align-items:center;text-decoration:none;">👁 신청 페이지 미리보기</a>
-          </div>
-          </div><!-- /content-panel-form -->
-
-          <!-- 완료 페이지 패널 -->
-          <div class="content-subpanel" id="content-panel-complete">
-          <div class="content-group">
-            <p class="content-group-title">신청 완료 페이지</p>
-            <div class="content-field">
-              <label class="content-label" for="complete-title">신청 완료 제목 <span>신청 완료 페이지의 큰 제목입니다</span></label>
-              <textarea class="content-textarea" id="complete-title" rows="2" placeholder="ODD PARTY에 이름이 올랐습니다"></textarea>
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="complete-sub">신청 완료 안내 <span>신청 완료 제목 아래의 안내 문구입니다</span></label>
-              <textarea class="content-textarea" id="complete-sub" rows="3" placeholder="축하합니다! 초대 신청이 접수되었습니다. 아래 계좌로 참가비를 입금하시면 최종 확정됩니다."></textarea>
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="complete-notice-title">확정 안내 제목 <span>완료 페이지 안내 박스의 제목입니다</span></label>
-              <textarea class="content-textarea" id="complete-notice-title" rows="1" placeholder="ℹ️ 확정 안내"></textarea>
-            </div>
-            <div class="content-field">
-              <label class="content-label" for="complete-notice-body">확정 안내 내용 <span>완료 페이지 안내 박스의 본문 내용입니다</span></label>
-              <textarea class="content-textarea tall" id="complete-notice-body" rows="3" placeholder="입금 완료 후 24시간 이내 문자 또는 카카오톡으로 확정 안내를 드립니다. 문의사항은 카카오톡 채널 @ODD파티로 연락주세요."></textarea>
-            </div>
-          </div>
-
-          <!-- 미리보기 버튼 -->
-          <div style="margin-top:var(--sp-md);margin-bottom:var(--sp-md);">
-            <a href="complete.html" target="_blank" rel="noopener" class="dash-btn" style="display:inline-flex;gap:6px;align-items:center;text-decoration:none;">👁 완료 페이지 미리보기</a>
-          </div>
-          </div><!-- /content-panel-complete -->
-
+            </div><!-- /editor-col -->
+          </div><!-- /live-editor-wrap -->
         </section>
 
         <!-- ── FAQ 관리 ── -->
@@ -1980,9 +2044,10 @@
     var CONTENT_FIELD_IDS = [
       'main-hero-title', 'main-hero-sub', 'scarcity-badge-text', 'sticky-cta-text', 'instagram-id',
       'main-about-p1', 'main-about-p2',
-      'main-price-info',
+      'main-price-info', 'main-price-note-건대', 'main-price-note-영등포',
       'main-cta-title', 'main-cta-sub',
       'form-title', 'form-subtitle', 'form-submit-note',
+      'form-rules-title', 'form-rules-list',
       'form-refund-title', 'form-refund-list', 'form-refund-notice',
       'complete-title', 'complete-sub',
       'complete-notice-title', 'complete-notice-body'
@@ -2358,17 +2423,62 @@
     }
 
     /* ============================================================
-       CONTENT SUB-TABS
+       CONTENT SUB-TABS + LIVE PREVIEW
     ============================================================ */
+    var previewPageMap = { 'content-panel-main': 'index.html', 'content-panel-form': 'form.html', 'content-panel-complete': 'complete.html' };
+    var currentPreviewPage = 'index.html';
+
     document.querySelectorAll('.content-subtab').forEach(function(tab) {
       tab.addEventListener('click', function() {
         document.querySelectorAll('.content-subtab').forEach(function(t) { t.classList.remove('active'); });
         document.querySelectorAll('.content-subpanel').forEach(function(p) { p.classList.remove('active'); });
         tab.classList.add('active');
-        var panel = document.getElementById(tab.getAttribute('data-panel'));
+        var panelId = tab.getAttribute('data-panel');
+        var panel = document.getElementById(panelId);
         if (panel) panel.classList.add('active');
+        // Switch iframe preview
+        var page = previewPageMap[panelId] || 'index.html';
+        currentPreviewPage = page;
+        var iframe = document.getElementById('preview-iframe');
+        if (iframe) iframe.src = page;
+        var newtab = document.getElementById('preview-newtab-btn');
+        if (newtab) newtab.href = page;
       });
     });
+
+    // Refresh button
+    document.getElementById('preview-refresh-btn').addEventListener('click', function() {
+      var iframe = document.getElementById('preview-iframe');
+      if (iframe) iframe.src = iframe.src;
+    });
+
+    // Live preview: on field input, update iframe DOM in real-time
+    function setupLivePreview() {
+      document.querySelectorAll('[data-preview-id]').forEach(function(field) {
+        field.addEventListener('input', function() {
+          var previewId = this.getAttribute('data-preview-id');
+          var val = this.value;
+          try {
+            var iframe = document.getElementById('preview-iframe');
+            var iDoc = iframe.contentDocument || iframe.contentWindow.document;
+            var el = iDoc.getElementById(previewId);
+            if (el) {
+              el.innerHTML = val.replace(/\n/g, '<br/>');
+              // Highlight effect
+              el.style.outline = '2px solid rgba(167,139,250,0.6)';
+              el.style.outlineOffset = '2px';
+              clearTimeout(el._hlTimer);
+              el._hlTimer = setTimeout(function() {
+                el.style.outline = 'none';
+                el.style.outlineOffset = '';
+              }, 1500);
+            }
+          } catch(e) { /* cross-origin or not loaded yet */ }
+        });
+      });
+    }
+    // Re-setup after iframe loads
+    document.getElementById('preview-iframe').addEventListener('load', setupLivePreview);
 
     /* ============================================================
        PRICE PREVIEW
