@@ -215,10 +215,8 @@ class ApplicationStore:
                 level = "마감"
             elif ratio >= 0.8:
                 level = "마감임박"
-            elif ratio >= 0.5:
-                level = "잔여 소수"
             else:
-                level = "여유"
+                level = "모집중"
             result[day] = {"capacity": cap, "count": count, "level": level}
         return result
 

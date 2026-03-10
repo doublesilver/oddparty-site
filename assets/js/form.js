@@ -22,11 +22,8 @@
       } else if (info.level === '마감임박') {
         badge.textContent = '마감임박';
         badge.className = 'radio-card-badge scarcity urgent';
-      } else if (info.level === '잔여 소수') {
-        badge.textContent = '잔여 소수';
-        badge.className = 'radio-card-badge scarcity';
       } else {
-        badge.textContent = '여유';
+        badge.textContent = '모집중';
         badge.className = 'radio-card-badge available';
       }
     });

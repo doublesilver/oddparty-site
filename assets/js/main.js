@@ -105,7 +105,6 @@ if (track) {
     const levels = Object.values(dates).map(d => d.level);
     const closedCount = levels.filter(l => l === '마감').length;
     const urgentCount = levels.filter(l => l === '마감임박').length;
-    const fewCount = levels.filter(l => l === '잔여 소수').length;
 
     let text = '';
     let isUrgent = false;
@@ -121,10 +120,8 @@ if (track) {
       const urgentDays = Object.entries(dates).filter(([,d]) => d.level === '마감임박').map(([k]) => k.replace('요일','')).join('·');
       text = urgentDays + ' 마감 임박! 잔여석이 얼마 남지 않았어요';
       isUrgent = true;
-    } else if (fewCount > 0) {
-      text = '이번 주 파티 잔여석 소수!';
     } else {
-      text = '이번 주 파티 신청 접수 중!';
+      text = '이번 주 파티 모집중!';
     }
 
     if (textEl) textEl.textContent = text;

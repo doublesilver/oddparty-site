@@ -2566,7 +2566,7 @@
         /* ── Scarcity badge dropdown (form page only) ── */
         if (iframeId === 'preview-form') {
           var scarcityIds = ['scarcity-금요일', 'scarcity-토요일', 'scarcity-일요일'];
-          var scarcityLevels = ['여유', '마감임박', '마감'];
+          var scarcityLevels = ['모집중', '마감임박', '마감'];
           scarcityIds.forEach(function(badgeId) {
             var badge = iDoc.getElementById(badgeId);
             if (!badge) return;
@@ -2582,7 +2582,7 @@
               var existing = iDoc.querySelector('.admin-scarcity-dropdown');
               if (existing) { existing.remove(); return; }
 
-              var currentLevel = badge.textContent.trim() || '여유';
+              var currentLevel = badge.textContent.trim() || '모집중';
               var dropdown = iDoc.createElement('div');
               dropdown.className = 'admin-scarcity-dropdown';
 
