@@ -320,13 +320,14 @@ class ApplicationStore:
         data = self.list_applications()
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(["ID", "접수시간", "이름", "나이", "전화번호", "지점", "가격", "금액", "지점안내", "희망일정", "할인코드", "상태", "메모"])
+        writer.writerow(["신청일시", "이름", "나이", "전화번호", "성별", "지점", "파티날짜", "쿠폰", "상태", "관리자메모", "금액"])
         for app in data["applications"]:
+            price_text = app.get("priceText", "")
+            gender = "여" if "여" in price_text else ("남" if "남" in price_text else "")
             writer.writerow([
-                app["id"], app["createdAt"], app["name"], app["age"],
-                app["phone"], app["branch"], app["priceText"], app["priceAmount"],
-                app["locationNote"], app["partyDate"], app["coupon"] or "",
-                app["status"], app["adminNote"],
+                app["createdAt"], app["name"], app["age"],
+                app["phone"], gender, app["branch"], app["partyDate"],
+                app["coupon"] or "", app["status"], app["adminNote"], app["priceAmount"],
             ])
         return output.getvalue()
 
@@ -533,6 +534,30 @@ class ApplicationStore:
         else:
             with self._sqlite_connection() as conn:
                 conn.execute("DELETE FROM faq WHERE id = ?", (faq_id,))
+
+    def delete_application(self, application_id: int) -> bool:
+        existing = self.get_application(application_id)
+        if not existing:
+            return False
+        if self.kind == "postgres":
+            self._query_one_postgres("DELETE FROM applications WHERE id = %s", (application_id,))
+        else:
+            with self._sqlite_connection() as conn:
+                conn.execute("DELETE FROM applications WHERE id = ?", (application_id,))
+        return True
+
+    def get_account_info(self) -> dict:
+        stored = self.get_site_content_value("account")
+        if stored:
+            try:
+                return json.loads(stored)
+            except (json.JSONDecodeError, TypeError):
+                pass
+        return {"bank": "농협은행", "account_number": "351-0948-4473-43", "holder": "이@봄"}
+
+    def set_account_info(self, account: dict) -> dict:
+        self.upsert_site_content({"account": json.dumps(account, ensure_ascii=False)})
+        return self.get_account_info()
 
     def _serialize_faq(self, row) -> dict:
         data = dict(row)
@@ -899,6 +924,16 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._write_json(200, {"content": STORE.get_site_content()})
             return
 
+        if parsed.path == "/api/account":
+            self._write_json(200, {"account": STORE.get_account_info()})
+            return
+
+        if parsed.path == "/api/admin/account":
+            if not self._require_admin():
+                return
+            self._write_json(200, {"account": STORE.get_account_info()})
+            return
+
         if parsed.path == "/api/pricing":
             if not self._require_admin():
                 return
@@ -973,7 +1008,13 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if parsed.path == "/api/applications/export/csv":
-            if not self._require_admin():
+            params = parse_qs(parsed.query)
+            token_param = params.get("token", [""])[0].strip()
+            if token_param:
+                if not hmac.compare_digest(token_param, get_admin_token()):
+                    self._write_json(401, {"error": "관리자 인증이 필요합니다."})
+                    return
+            elif not self._require_admin():
                 return
             csv_data = STORE.export_applications_csv()
             body = csv_data.encode("utf-8-sig")
@@ -1167,6 +1208,41 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
             except Exception as exc:
                 self._write_json(500, {"error": str(exc)})
+            return
+
+        if parsed.path == "/api/admin/account":
+            if not self._require_admin():
+                return
+            try:
+                payload = self._read_payload()
+                bank = str(payload.get("bank", "")).strip()
+                account_number = str(payload.get("account_number", "")).strip()
+                holder = str(payload.get("holder", "")).strip()
+                if not bank or not account_number or not holder:
+                    self._write_json(400, {"error": "bank, account_number, holder 필드가 필요합니다."})
+                    return
+                result = STORE.set_account_info({"bank": bank, "account_number": account_number, "holder": holder})
+                self._write_json(200, {"account": result})
+            except json.JSONDecodeError:
+                self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
+            except Exception as exc:
+                self._write_json(500, {"error": str(exc)})
+            return
+
+        if parsed.path == "/api/admin/applications/delete":
+            if not self._require_admin():
+                return
+            try:
+                payload = self._read_payload()
+                application_id = int(str(payload.get("id", "")).strip())
+            except (json.JSONDecodeError, ValueError):
+                self._write_json(400, {"error": "유효한 id 필드가 필요합니다."})
+                return
+            deleted = STORE.delete_application(application_id)
+            if not deleted:
+                self._write_json(404, {"error": "신청 정보를 찾을 수 없습니다."})
+                return
+            self._write_json(200, {"ok": True})
             return
 
         if parsed.path != "/api/applications":

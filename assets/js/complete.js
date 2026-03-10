@@ -93,6 +93,23 @@ if (data) {
 })();
 
 /* =============================================
+   ACCOUNT INFO (dynamic from API)
+   ============================================= */
+(async function loadAccountInfo() {
+  try {
+    const res = await fetch('https://oddparty-api-production.up.railway.app/api/account');
+    if (!res.ok) return;
+    const { bank, account_number, holder } = await res.json();
+    const bankEl = document.getElementById('complete-bank-name');
+    const accountEl = document.getElementById('account-number');
+    const holderEl = document.getElementById('complete-account-holder');
+    if (bank && bankEl) bankEl.textContent = bank;
+    if (account_number && accountEl) accountEl.textContent = account_number;
+    if (holder && holderEl) holderEl.textContent = '예금주: ' + holder;
+  } catch { /* no backend — keep default values */ }
+})();
+
+/* =============================================
    COPY ACCOUNT
    ============================================= */
 function copyAccount() {

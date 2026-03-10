@@ -51,6 +51,35 @@
 })();
 
 /* =============================================
+   ACCOUNT INFO (dynamic from API)
+   ============================================= */
+(async function loadAccountInfo() {
+  try {
+    const res = await fetch('https://oddparty-api-production.up.railway.app/api/account');
+    if (!res.ok) return;
+    const { bank, account_number, holder } = await res.json();
+    const bankEl = document.getElementById('form-bank-name');
+    const accountEl = document.getElementById('account-number');
+    const holderEl = document.getElementById('form-account-holder');
+    const noteBank = document.getElementById('form-submit-note-bank');
+    const noteAccount = document.getElementById('form-submit-note-account');
+    const noteHolder = document.getElementById('form-submit-note-holder');
+    if (bank) {
+      if (bankEl) bankEl.textContent = bank;
+      if (noteBank) noteBank.textContent = bank;
+    }
+    if (account_number) {
+      if (accountEl) accountEl.textContent = account_number;
+      if (noteAccount) noteAccount.textContent = account_number;
+    }
+    if (holder) {
+      if (holderEl) holderEl.textContent = '예금주: ' + holder;
+      if (noteHolder) noteHolder.textContent = holder;
+    }
+  } catch { /* no backend — keep default values */ }
+})();
+
+/* =============================================
    PRICE DATA (loaded from API, fallback to defaults)
    ============================================= */
 let PRICES = {

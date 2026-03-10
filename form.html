@@ -25,9 +25,9 @@
     <div class="payment-card" role="region" aria-label="입금 계좌 안내">
       <div class="payment-left">
         <p class="payment-label">입금 계좌</p>
-        <p class="payment-bank">농협은행</p>
+        <p class="payment-bank" id="form-bank-name">농협은행</p>
         <p class="payment-account" id="account-number">351-0948-4473-43</p>
-        <p class="payment-holder">예금주: 이@봄</p>
+        <p class="payment-holder" id="form-account-holder">예금주: 이@봄</p>
       </div>
       <button class="copy-btn" type="button" id="copy-account-btn" aria-label="계좌번호 복사">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
@@ -178,7 +178,7 @@
         </button>
         <p class="submit-note" id="form-submit-note">
           접수 후 입금 완료 시 신청이 확정됩니다.<br/>
-          계좌: 농협 351-0948-4473-43 (이@봄)
+          계좌: <span id="form-submit-note-bank">농협</span> <span id="form-submit-note-account">351-0948-4473-43</span> (<span id="form-submit-note-holder">이@봄</span>)
         </p>
       </div>
 
