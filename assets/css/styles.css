@@ -282,11 +282,11 @@ input {
 .hero-bg {
   position: absolute;
   inset: 0;
-  background: url('../images/logo-dark.webp') center / contain no-repeat;
+  background: url('../images/logo-dark.webp') center 20% / contain no-repeat;
   background: image-set(
     url('../images/logo-dark.webp') type('image/webp'),
     url('../images/logo-dark.png') type('image/png')
-  ) center / contain no-repeat;
+  ) center 20% / contain no-repeat;
 }
 .hero-overlay {
   position: absolute;
