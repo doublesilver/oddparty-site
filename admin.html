@@ -934,6 +934,13 @@
               <label class="content-label" for="main-hero-sub">히어로 서브타이틀 <span>(index.html · .hero-sub)</span></label>
               <textarea class="content-textarea" id="main-hero-sub" rows="2"></textarea>
             </div>
+            <div class="content-field">
+              <label class="content-label" for="scarcity-badge-text">잔여석 배지 문구 <span>(비워두면 참여자 수 기반 자동 표시)</span></label>
+              <input class="content-textarea" type="text" id="scarcity-badge-text" placeholder="예: 이번 주 파티 잔여석 마감 임박!" style="height:auto;padding:10px 14px;" />
+              <p style="font-size:var(--fs-xs);color:var(--muted);margin-top:4px;">
+                자동 단계: 여유 → 잔여 소수 → 마감 임박 → 마감 (정원 관리 설정 기반)
+              </p>
+            </div>
           </div>
 
           <!-- About -->
@@ -1535,7 +1542,7 @@
        CONTENT MANAGEMENT
     ============================================================ */
     var CONTENT_FIELD_IDS = [
-      'main-hero-title', 'main-hero-sub',
+      'main-hero-title', 'main-hero-sub', 'scarcity-badge-text',
       'main-about-p1', 'main-about-p2',
       'main-price-info',
       'main-cta-title', 'main-cta-sub',

@@ -327,6 +327,11 @@ class ApplicationStore:
             ).fetchall()
         return {row["content_key"]: row["content_value"] for row in rows}
 
+    def get_site_content_value(self, key: str) -> str | None:
+        content = self.get_site_content()
+        val = content.get(key, "").strip()
+        return val if val else None
+
     def upsert_site_content(self, content: dict) -> dict:
         normalized = self._normalize_site_content(content)
         if not normalized:
@@ -674,7 +679,11 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if parsed.path == "/api/scarcity":
-            self._write_json(200, {"dates": STORE.get_scarcity_info()})
+            result = {"dates": STORE.get_scarcity_info()}
+            custom_text = STORE.get_site_content_value("scarcity-badge-text")
+            if custom_text:
+                result["custom_badge_text"] = custom_text
+            self._write_json(200, result)
             return
 
         if parsed.path == "/api/capacity":

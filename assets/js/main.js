@@ -85,11 +85,49 @@ if (track) {
     if (!res.ok) return;
     const data = await res.json();
     const dates = data.dates || {};
-    const urgentDays = Object.values(dates).filter(d => d.level === '마감임박' || d.level === '마감');
-    const badge = document.querySelector('.scarcity-badge');
-    if (badge && urgentDays.length > 0) {
-      badge.querySelector('.scarcity-dot')?.classList.add('urgent');
+    const badge = document.getElementById('scarcity-badge');
+    if (!badge) return;
+
+    const dot = badge.querySelector('.scarcity-dot');
+    const textEl = badge.querySelector('.scarcity-text');
+
+    // 관리자 수동 설정 문구가 있으면 우선 사용
+    if (data.custom_badge_text) {
+      if (textEl) textEl.textContent = data.custom_badge_text;
+      if (dot) dot.classList.add('urgent');
+      badge.style.display = '';
+      return;
     }
+
+    // 자동 단계별 텍스트
+    const levels = Object.values(dates).map(d => d.level);
+    const closedCount = levels.filter(l => l === '마감').length;
+    const urgentCount = levels.filter(l => l === '마감임박').length;
+    const fewCount = levels.filter(l => l === '잔여 소수').length;
+
+    let text = '';
+    let isUrgent = false;
+
+    if (closedCount === 3) {
+      text = '이번 주 파티 전일 마감!';
+      isUrgent = true;
+    } else if (closedCount > 0) {
+      const closedDays = Object.entries(dates).filter(([,d]) => d.level === '마감').map(([k]) => k.replace('요일','')).join('·');
+      text = closedDays + ' 마감! 서둘러 신청하세요';
+      isUrgent = true;
+    } else if (urgentCount > 0) {
+      const urgentDays = Object.entries(dates).filter(([,d]) => d.level === '마감임박').map(([k]) => k.replace('요일','')).join('·');
+      text = urgentDays + ' 마감 임박! 잔여석이 얼마 남지 않았어요';
+      isUrgent = true;
+    } else if (fewCount > 0) {
+      text = '이번 주 파티 잔여석 소수!';
+    } else {
+      text = '이번 주 파티 신청 접수 중!';
+    }
+
+    if (textEl) textEl.textContent = text;
+    if (dot && isUrgent) dot.classList.add('urgent');
+    badge.style.display = '';
   } catch { /* no backend */ }
 })();
 
