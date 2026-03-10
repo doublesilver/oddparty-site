@@ -3,7 +3,7 @@
    ============================================= */
 (async function loadScarcity() {
   try {
-    const res = await fetch('/api/scarcity');
+    const res = await fetch('https://oddparty-api-production.up.railway.app/api/scarcity');
     if (!res.ok) return;
     const data = await res.json();
     const dates = data.dates || {};
@@ -296,7 +296,7 @@ document.getElementById('party-form').addEventListener('submit', async (e) => {
   sessionStorage.setItem('odd_party_data', JSON.stringify(formData));
 
   try {
-    await fetch('/api/apply', {
+    await fetch('https://oddparty-api-production.up.railway.app/api/apply', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),

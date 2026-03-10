@@ -107,7 +107,7 @@ if (track) {
 /* --- Hero scarcity badge (dynamic) --- */
 (async function() {
   try {
-    const res = await fetch('/api/scarcity');
+    const res = await fetch('https://oddparty-api-production.up.railway.app/api/scarcity');
     if (!res.ok) return;
     const data = await res.json();
     const dates = data.dates || {};
