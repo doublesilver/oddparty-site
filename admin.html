@@ -798,8 +798,9 @@
     <!-- Mobile top tabs -->
     <div class="admin-tabs" id="admin-tabs">
       <button class="admin-tab-btn active" data-target="sec-dashboard">대시보드</button>
-      <button class="admin-tab-btn" data-target="sec-capacity">정원 관리</button>
-      <button class="admin-tab-btn" data-target="sec-content">콘텐츠 관리</button>
+      <button class="admin-tab-btn" data-target="sec-capacity">날짜별 정원</button>
+      <button class="admin-tab-btn" data-target="sec-discount">할인코드</button>
+      <button class="admin-tab-btn" data-target="sec-content">문구 수정</button>
       <button class="admin-tab-btn" data-target="sec-settings">설정</button>
     </div>
 
@@ -816,12 +817,17 @@
           </li>
           <li class="sidebar-nav-item">
             <button class="sidebar-nav-btn" data-target="sec-capacity" type="button">
-              <span class="sidebar-nav-icon">🗓️</span> 정원 관리
+              <span class="sidebar-nav-icon">🗓️</span> 날짜별 정원 설정
+            </button>
+          </li>
+          <li class="sidebar-nav-item">
+            <button class="sidebar-nav-btn" data-target="sec-discount" type="button">
+              <span class="sidebar-nav-icon">🎟️</span> 할인코드 관리
             </button>
           </li>
           <li class="sidebar-nav-item">
             <button class="sidebar-nav-btn" data-target="sec-content" type="button">
-              <span class="sidebar-nav-icon">✏️</span> 콘텐츠 관리
+              <span class="sidebar-nav-icon">✏️</span> 사이트 문구 수정
             </button>
           </li>
           <li class="sidebar-nav-item">
@@ -912,7 +918,7 @@
 
         <!-- ── 정원 관리 ── -->
         <section class="admin-section" id="sec-capacity">
-          <h2 class="admin-section-title">정원 관리</h2>
+          <h2 class="admin-section-title">날짜별 정원 설정</h2>
           <div class="capacity-grid" id="capacity-grid">
             <div class="content-group" style="text-align:center;color:var(--muted);">불러오는 중…</div>
           </div>
@@ -920,18 +926,18 @@
 
         <!-- ── 콘텐츠 관리 ── -->
         <section class="admin-section" id="sec-content">
-          <h2 class="admin-section-title">콘텐츠 관리</h2>
+          <h2 class="admin-section-title">사이트 문구 수정</h2>
 
           <!-- 히어로 -->
           <div class="content-group">
-            <p class="content-group-title">히어로 섹션</p>
+            <p class="content-group-title">메인 페이지 상단 (히어로)</p>
 
             <div class="content-field">
-              <label class="content-label" for="main-hero-title">히어로 타이틀 <span>(index.html · .hero-title)</span></label>
+              <label class="content-label" for="main-hero-title">메인 제목 <span>메인 페이지 상단에 크게 표시되는 제목입니다</span></label>
               <textarea class="content-textarea" id="main-hero-title" rows="2" placeholder="낯선 사람들이 만나는 밤"></textarea>
             </div>
             <div class="content-field">
-              <label class="content-label" for="main-hero-sub">히어로 서브타이틀 <span>(index.html · .hero-sub)</span></label>
+              <label class="content-label" for="main-hero-sub">메인 부제목 <span>메인 제목 아래에 표시되는 한 줄 소개글입니다</span></label>
               <textarea class="content-textarea" id="main-hero-sub" rows="2" placeholder="20~30대 소셜 파티 · ODD PARTY"></textarea>
             </div>
             <div class="content-field">
@@ -953,86 +959,128 @@
 
           <!-- About -->
           <div class="content-group">
-            <p class="content-group-title">About 섹션</p>
+            <p class="content-group-title">파티 소개</p>
             <div class="content-field">
-              <label class="content-label" for="main-about-p1">소개 본문 1단락 <span>(index.html · .intro-body p:first-child)</span></label>
+              <label class="content-label" for="main-about-p1">파티 소개 첫번째 문단 <span>메인 페이지 'ODD PARTY란?' 섹션의 첫번째 문단입니다</span></label>
               <textarea class="content-textarea tall" id="main-about-p1" rows="4" placeholder="ODD PARTY는 혼자 가도 어색하지 않은 소셜 파티입니다. 직장·학교·동네 어디에서도 만날 수 없는 새로운 인연을 만들어 드립니다. 처음 만나는 사이도 자연스럽게 어울릴 수 있도록, 감각적인 공간과 즐거운 프로그램을 준비했습니다."></textarea>
             </div>
             <div class="content-field">
-              <label class="content-label" for="main-about-p2">소개 본문 2단락 <span>(index.html · .intro-body p:last-child)</span></label>
+              <label class="content-label" for="main-about-p2">파티 소개 두번째 문단 <span>메인 페이지 'ODD PARTY란?' 섹션의 두번째 문단입니다</span></label>
               <textarea class="content-textarea tall" id="main-about-p2" rows="4" placeholder="매주 금·토·일 진행되며, 서울 건대 / 영등포 두 지점에서 만나볼 수 있습니다. 20~30대라면 누구나 편하게 신청하실 수 있어요. 혼자 오셔도 충분히 즐길 수 있습니다."></textarea>
             </div>
           </div>
 
           <!-- 가격 -->
           <div class="content-group">
-            <p class="content-group-title">가격 섹션</p>
+            <p class="content-group-title">가격 안내</p>
             <div class="content-field">
-              <label class="content-label" for="main-price-info">가격 안내 텍스트 <span>(index.html · .price-info)</span></label>
+              <label class="content-label" for="main-price-info">가격 안내 설명 <span>지점별 가격 카드 아래에 표시되는 안내 문구입니다</span></label>
               <textarea class="content-textarea tall" id="main-price-info" rows="3" placeholder="주류및 음료는 모든 지점 제공됩니다! (한잔등 제한 없음) 할인코드 보유 시 신청 폼 입력란에 기재해 주세요. 할인은 최종 결제 금액에서 차감됩니다."></textarea>
             </div>
           </div>
 
           <!-- CTA -->
           <div class="content-group">
-            <p class="content-group-title">CTA 섹션</p>
+            <p class="content-group-title">신청 유도 영역</p>
             <div class="content-field">
-              <label class="content-label" for="main-cta-title">CTA 타이틀 <span>(index.html · .cta-title)</span></label>
+              <label class="content-label" for="main-cta-title">신청 유도 제목 <span>메인 페이지 하단 '다음 파티에 초대합니다' 영역의 제목입니다</span></label>
               <textarea class="content-textarea" id="main-cta-title" rows="2" placeholder="다음 파티에 초대합니다"></textarea>
             </div>
             <div class="content-field">
-              <label class="content-label" for="main-cta-sub">CTA 서브텍스트 <span>(index.html · .cta-sub)</span></label>
+              <label class="content-label" for="main-cta-sub">신청 유도 설명 <span>신청 유도 제목 아래의 설명 문구입니다</span></label>
               <textarea class="content-textarea" id="main-cta-sub" rows="3" placeholder="매 회차 소수 정예로 진행됩니다. 지금 바로 초대를 신청하세요!"></textarea>
             </div>
           </div>
 
           <!-- 신청 폼 -->
           <div class="content-group">
-            <p class="content-group-title">신청페이지</p>
+            <p class="content-group-title">신청 페이지</p>
             <div class="content-field">
-              <label class="content-label" for="form-title">폼 타이틀 <span>(form.html · .form-title)</span></label>
+              <label class="content-label" for="form-title">신청 페이지 제목 <span>신청 페이지 상단에 표시되는 제목입니다</span></label>
               <textarea class="content-textarea" id="form-title" rows="2" placeholder="파티 초대 신청"></textarea>
             </div>
             <div class="content-field">
-              <label class="content-label" for="form-subtitle">폼 서브타이틀 <span>(form.html · .form-subtitle)</span></label>
+              <label class="content-label" for="form-subtitle">신청 페이지 부제목 <span>신청 페이지 제목 아래의 안내 문구입니다</span></label>
               <textarea class="content-textarea" id="form-subtitle" rows="2" placeholder="신청서를 검토 후 확정 안내를 드립니다."></textarea>
             </div>
             <div class="content-field">
-              <label class="content-label" for="form-submit-note">제출 안내 문구 <span>(form.html · .submit-note)</span></label>
+              <label class="content-label" for="form-submit-note">제출 버튼 아래 안내 <span>신청하기 버튼 아래에 표시되는 안내 문구입니다</span></label>
               <textarea class="content-textarea" id="form-submit-note" rows="3" placeholder="접수 후 입금 완료 시 신청이 확정됩니다. 계좌: 농협 351-0948-4473-43 (이@봄)"></textarea>
             </div>
             <div class="content-field">
-              <label class="content-label" for="form-refund-title">환불 규정 타이틀 <span>(form.html · .refund-title)</span></label>
+              <label class="content-label" for="form-refund-title">환불 규정 제목 <span>신청 페이지 하단 환불 규정의 제목입니다</span></label>
               <textarea class="content-textarea" id="form-refund-title" rows="1" placeholder="참가비 환불 규정"></textarea>
             </div>
             <div class="content-field">
-              <label class="content-label" for="form-refund-list">환불 규정 항목 <span>(form.html · .refund-list, 줄바꿈으로 구분)</span></label>
+              <label class="content-label" for="form-refund-list">환불 규정 항목 <span>각 규정을 줄바꿈으로 구분하여 입력하세요</span></label>
               <textarea class="content-textarea tall" id="form-refund-list" rows="6" placeholder="결제 후 30분 이내 취소: 전액 환불&#10;승인 대기 중 취소: 전액 환불&#10;파티 4일 전까지 취소: 전액 환불&#10;파티 3일 전~당일 취소: 환불 불가&#10;파티 당일 신청 후 취소: 환불 불가"></textarea>
             </div>
             <div class="content-field">
-              <label class="content-label" for="form-refund-notice">환불 규정 주의사항 <span>(form.html · .refund-notice)</span></label>
+              <label class="content-label" for="form-refund-notice">환불 규정 추가 안내 <span>환불 규정 아래에 표시되는 추가 안내 문구입니다</span></label>
               <textarea class="content-textarea tall" id="form-refund-notice" rows="3" placeholder="* 파티내에서는 촬영이 있을 수 있습니다. 파티 참여는 초상권 동의에 해당합니다."></textarea>
             </div>
           </div>
 
           <!-- 완료 페이지 -->
           <div class="content-group">
-            <p class="content-group-title">완료페이지</p>
+            <p class="content-group-title">신청 완료 페이지</p>
             <div class="content-field">
-              <label class="content-label" for="complete-title">완료 타이틀 <span>(complete.html · .success-title)</span></label>
+              <label class="content-label" for="complete-title">신청 완료 제목 <span>신청 완료 페이지의 큰 제목입니다</span></label>
               <textarea class="content-textarea" id="complete-title" rows="2" placeholder="ODD PARTY에 이름이 올랐습니다"></textarea>
             </div>
             <div class="content-field">
-              <label class="content-label" for="complete-sub">완료 서브텍스트 <span>(complete.html · .success-sub)</span></label>
+              <label class="content-label" for="complete-sub">신청 완료 안내 <span>신청 완료 제목 아래의 안내 문구입니다</span></label>
               <textarea class="content-textarea" id="complete-sub" rows="3" placeholder="축하합니다! 초대 신청이 접수되었습니다. 아래 계좌로 참가비를 입금하시면 최종 확정됩니다."></textarea>
             </div>
             <div class="content-field">
-              <label class="content-label" for="complete-notice-title">안내 박스 타이틀 <span>(complete.html · .notice-box-title)</span></label>
+              <label class="content-label" for="complete-notice-title">확정 안내 제목 <span>완료 페이지 안내 박스의 제목입니다</span></label>
               <textarea class="content-textarea" id="complete-notice-title" rows="1" placeholder="ℹ️ 확정 안내"></textarea>
             </div>
             <div class="content-field">
-              <label class="content-label" for="complete-notice-body">안내 박스 본문 <span>(complete.html · .notice-box p:last-child)</span></label>
+              <label class="content-label" for="complete-notice-body">확정 안내 내용 <span>완료 페이지 안내 박스의 본문 내용입니다</span></label>
               <textarea class="content-textarea tall" id="complete-notice-body" rows="3" placeholder="입금 완료 후 24시간 이내 문자 또는 카카오톡으로 확정 안내를 드립니다. 문의사항은 카카오톡 채널 @ODD파티로 연락주세요."></textarea>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── 할인코드 관리 ── -->
+        <section class="admin-section" id="sec-discount">
+          <h2 class="admin-section-title">할인코드 관리</h2>
+          <p style="color:var(--muted);font-size:var(--fs-sm);margin-bottom:var(--sp-lg);">할인코드를 만들어 참가자에게 공유하세요. 신청 시 할인코드를 입력하면 자동으로 할인이 적용됩니다.</p>
+
+          <div class="content-group">
+            <p class="content-group-title">새 할인코드 만들기</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:var(--sp-lg);">
+              <div style="flex:2;min-width:140px;">
+                <label class="content-label" style="margin-bottom:4px;">할인코드</label>
+                <div style="display:flex;gap:6px;">
+                  <input class="settings-input" type="text" id="dc-code" placeholder="직접 입력 또는 자동생성" style="flex:1;" />
+                  <button class="save-btn" type="button" id="dc-generate" style="padding:8px 12px;font-size:var(--fs-xs);white-space:nowrap;">자동생성</button>
+                </div>
+              </div>
+              <div style="flex:1;min-width:100px;">
+                <label class="content-label" style="margin-bottom:4px;">할인 종류</label>
+                <select class="settings-input" id="dc-type" style="width:100%;">
+                  <option value="fixed">금액 할인 (원)</option>
+                  <option value="percent">비율 할인 (%)</option>
+                </select>
+              </div>
+              <div style="flex:1;min-width:80px;">
+                <label class="content-label" style="margin-bottom:4px;">할인값</label>
+                <input class="settings-input" type="number" id="dc-value" placeholder="예: 5000" style="width:100%;" />
+              </div>
+              <div style="flex:1;min-width:80px;">
+                <label class="content-label" style="margin-bottom:4px;">사용 제한</label>
+                <input class="settings-input" type="number" id="dc-max" placeholder="0=무제한" value="0" style="width:100%;" />
+              </div>
+              <button class="save-btn" type="button" id="dc-create" style="padding:10px 20px;">만들기</button>
+            </div>
+          </div>
+
+          <div class="content-group">
+            <p class="content-group-title">발급된 할인코드 목록</p>
+            <div id="dc-list" style="margin-top:var(--sp-md);">
+              <p style="color:var(--muted);font-size:var(--fs-sm);">불러오는 중...</p>
             </div>
           </div>
         </section>
@@ -1140,6 +1188,7 @@
       bindNav();
       bindDashboard();
       bindContent();
+      bindDiscount();
       bindSettings();
       document.getElementById('login-form').addEventListener('submit', handleLogin);
       document.getElementById('logout-btn').addEventListener('click', handleLogout);
@@ -1603,6 +1652,80 @@
       })
       .catch(function() {
         showToast('저장 실패', true);
+      });
+    }
+
+    /* ============================================================
+       DISCOUNT CODES
+    ============================================================ */
+    function bindDiscount() {
+      document.getElementById('dc-generate').addEventListener('click', function() {
+        var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        var code = 'ODD-';
+        for (var i = 0; i < 6; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+        document.getElementById('dc-code').value = code;
+      });
+
+      document.getElementById('dc-create').addEventListener('click', function() {
+        var code = document.getElementById('dc-code').value.trim();
+        var dtype = document.getElementById('dc-type').value;
+        var dval = parseInt(document.getElementById('dc-value').value) || 0;
+        var dmax = parseInt(document.getElementById('dc-max').value) || 0;
+
+        if (!code) { showToast('할인코드를 입력해 주세요.', true); return; }
+        if (dval <= 0) { showToast('할인값을 입력해 주세요.', true); return; }
+
+        fetch(API_BASE + '/api/discount-codes', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ code: code, discount_type: dtype, discount_value: dval, max_uses: dmax })
+        })
+        .then(function(r) {
+          if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || '생성 실패'); });
+          return r.json();
+        })
+        .then(function() {
+          showToast('할인코드가 생성되었습니다.');
+          document.getElementById('dc-code').value = '';
+          document.getElementById('dc-value').value = '';
+          document.getElementById('dc-max').value = '0';
+          loadDiscountCodes();
+        })
+        .catch(function(e) { showToast(e.message, true); });
+      });
+
+      loadDiscountCodes();
+    }
+
+    function loadDiscountCodes() {
+      fetch(API_BASE + '/api/discount-codes', { headers: authHeaders() })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var codes = data.codes || [];
+        var el = document.getElementById('dc-list');
+        if (!codes.length) {
+          el.innerHTML = '<p style="color:var(--muted);font-size:var(--fs-sm);">발급된 할인코드가 없습니다.</p>';
+          return;
+        }
+        var html = '<table style="width:100%;font-size:var(--fs-sm);border-collapse:collapse;">';
+        html += '<thead><tr style="text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">';
+        html += '<th style="padding:8px 6px;">코드</th><th style="padding:8px 6px;">할인</th><th style="padding:8px 6px;">사용</th><th style="padding:8px 6px;">상태</th></tr></thead><tbody>';
+        codes.forEach(function(c) {
+          var discountText = c.discount_type === 'percent' ? c.discount_value + '%' : c.discount_value.toLocaleString() + '원';
+          var usageText = c.used_count + (c.max_uses > 0 ? '/' + c.max_uses : '/∞');
+          var statusText = c.is_active ? '<span style="color:#22c55e;">활성</span>' : '<span style="color:var(--muted);">비활성</span>';
+          html += '<tr style="border-bottom:1px solid var(--border);">';
+          html += '<td style="padding:8px 6px;font-weight:600;font-family:monospace;">' + esc(c.code) + '</td>';
+          html += '<td style="padding:8px 6px;">' + discountText + '</td>';
+          html += '<td style="padding:8px 6px;">' + usageText + '</td>';
+          html += '<td style="padding:8px 6px;">' + statusText + '</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+        el.innerHTML = html;
+      })
+      .catch(function() {
+        document.getElementById('dc-list').innerHTML = '<p style="color:var(--muted);font-size:var(--fs-sm);">할인코드를 불러오지 못했습니다.</p>';
       });
     }
 

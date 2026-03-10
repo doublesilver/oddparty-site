@@ -124,6 +124,20 @@ class ApplicationStore:
                 )
                 """
             )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS discount_codes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    code TEXT NOT NULL UNIQUE,
+                    discount_type TEXT NOT NULL DEFAULT 'fixed',
+                    discount_value INTEGER NOT NULL DEFAULT 0,
+                    max_uses INTEGER NOT NULL DEFAULT 0,
+                    used_count INTEGER NOT NULL DEFAULT 0,
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
 
     def get_capacity_settings(self) -> dict:
         if self.kind == "postgres":
@@ -368,6 +382,71 @@ class ApplicationStore:
 
         return self.get_site_content()
 
+    def get_discount_codes(self) -> list[dict]:
+        if self.kind == "postgres":
+            rows = self._query_all_postgres("SELECT * FROM discount_codes ORDER BY id DESC")
+        else:
+            with self._sqlite_connection() as conn:
+                rows = conn.execute("SELECT * FROM discount_codes ORDER BY id DESC").fetchall()
+        return [dict(row) for row in rows]
+
+    def create_discount_code(self, code: str, discount_type: str, discount_value: int, max_uses: int) -> dict:
+        if self.kind == "postgres":
+            row = self._query_one_postgres(
+                """
+                INSERT INTO discount_codes (code, discount_type, discount_value, max_uses)
+                VALUES (%s, %s, %s, %s)
+                RETURNING *
+                """,
+                (code, discount_type, discount_value, max_uses),
+            )
+            return dict(row)
+        else:
+            with self._sqlite_connection() as conn:
+                cursor = conn.execute(
+                    """
+                    INSERT INTO discount_codes (code, discount_type, discount_value, max_uses)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (code, discount_type, discount_value, max_uses),
+                )
+                new_id = cursor.lastrowid
+            with self._sqlite_connection() as conn:
+                row = conn.execute("SELECT * FROM discount_codes WHERE id = ?", (new_id,)).fetchone()
+            return dict(row)
+
+    def validate_discount_code(self, code: str) -> dict | None:
+        if self.kind == "postgres":
+            row = self._query_one_postgres(
+                "SELECT * FROM discount_codes WHERE code = %s AND is_active = 1",
+                (code,),
+            )
+        else:
+            with self._sqlite_connection() as conn:
+                row = conn.execute(
+                    "SELECT * FROM discount_codes WHERE code = ? AND is_active = 1",
+                    (code,),
+                ).fetchone()
+        if not row:
+            return None
+        data = dict(row)
+        if data["max_uses"] > 0 and data["used_count"] >= data["max_uses"]:
+            return None
+        return data
+
+    def increment_discount_usage(self, code: str) -> None:
+        if self.kind == "postgres":
+            self._query_one_postgres(
+                "UPDATE discount_codes SET used_count = used_count + 1 WHERE code = %s",
+                (code,),
+            )
+        else:
+            with self._sqlite_connection() as conn:
+                conn.execute(
+                    "UPDATE discount_codes SET used_count = used_count + 1 WHERE code = ?",
+                    (code,),
+                )
+
     def _normalize_payload(self, payload: dict) -> dict:
         name = self._require_text(payload.get("name"), "이름", 40)
         phone = re.sub(r"[^0-9]", "", str(payload.get("phone", "")))
@@ -522,6 +601,20 @@ class ApplicationStore:
                         day_key TEXT PRIMARY KEY,
                         capacity INTEGER NOT NULL DEFAULT 30,
                         updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS discount_codes (
+                        id SERIAL PRIMARY KEY,
+                        code TEXT NOT NULL UNIQUE,
+                        discount_type TEXT NOT NULL DEFAULT 'fixed',
+                        discount_value INTEGER NOT NULL DEFAULT 0,
+                        max_uses INTEGER NOT NULL DEFAULT 0,
+                        used_count INTEGER NOT NULL DEFAULT 0,
+                        is_active INTEGER NOT NULL DEFAULT 1,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
                     )
                     """
                 )
@@ -699,6 +792,29 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._write_json(200, {"capacity": STORE.get_capacity_settings()})
             return
 
+        if parsed.path == "/api/discount-codes":
+            if not self._require_admin():
+                return
+            self._write_json(200, {"discount_codes": STORE.get_discount_codes()})
+            return
+
+        if parsed.path == "/api/discount/validate":
+            params = parse_qs(parsed.query)
+            code = params.get("code", [""])[0].strip()
+            if not code:
+                self._write_json(400, {"error": "code 파라미터가 필요합니다."})
+                return
+            result = STORE.validate_discount_code(code)
+            if result:
+                self._write_json(200, {
+                    "valid": True,
+                    "discount_type": result["discount_type"],
+                    "discount_value": result["discount_value"],
+                })
+            else:
+                self._write_json(200, {"valid": False})
+            return
+
         if parsed.path == "/api/applications":
             if not self._require_admin():
                 return
@@ -813,6 +929,29 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._write_json(200, {"content": content})
             return
 
+        if parsed.path == "/api/discount-codes":
+            if not self._require_admin():
+                return
+            try:
+                payload = self._read_payload()
+                code = str(payload.get("code", "")).strip()
+                discount_type = str(payload.get("discount_type", "fixed")).strip()
+                discount_value = int(payload.get("discount_value", 0))
+                max_uses = int(payload.get("max_uses", 0))
+                if not code:
+                    self._write_json(400, {"error": "code 필드가 필요합니다."})
+                    return
+                if discount_type not in ("fixed", "percent"):
+                    self._write_json(400, {"error": "discount_type은 'fixed' 또는 'percent'이어야 합니다."})
+                    return
+                result = STORE.create_discount_code(code, discount_type, discount_value, max_uses)
+                self._write_json(201, {"discount_code": result})
+            except json.JSONDecodeError:
+                self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
+            except Exception as exc:
+                self._write_json(500, {"error": str(exc)})
+            return
+
         if parsed.path != "/api/applications":
             self._write_json(404, {"error": "지원하지 않는 경로입니다."})
             return
@@ -826,6 +965,13 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
         except json.JSONDecodeError:
             self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
             return
+
+        discount_code = str(payload.get("discount", "") or payload.get("coupon", "") or "").strip()
+        if discount_code:
+            try:
+                STORE.increment_discount_usage(discount_code)
+            except Exception:
+                pass
 
         self._write_json(
             201,
