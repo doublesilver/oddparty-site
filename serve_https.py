@@ -125,9 +125,13 @@ class ApplicationStore:
             )
 
     def get_capacity_settings(self) -> dict:
-        with self._connect() as conn:
-            rows = conn.execute("SELECT day_key, capacity FROM capacity_settings").fetchall()
-        settings = {r[0]: r[1] for r in rows}
+        if self.kind == "postgres":
+            rows = self._query_all_postgres("SELECT day_key, capacity FROM capacity_settings")
+            settings = {r["day_key"]: r["capacity"] for r in rows}
+        else:
+            with self._sqlite_connection() as conn:
+                rows = conn.execute("SELECT day_key, capacity FROM capacity_settings").fetchall()
+            settings = {r[0]: r[1] for r in rows}
         # defaults
         for day in ("금요일", "토요일", "일요일"):
             if day not in settings:
@@ -135,24 +139,42 @@ class ApplicationStore:
         return settings
 
     def set_capacity(self, day_key: str, capacity: int) -> dict:
-        with self._connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO capacity_settings (day_key, capacity, updated_at)
-                VALUES (?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(day_key) DO UPDATE SET capacity=excluded.capacity, updated_at=excluded.updated_at
-                """,
-                (day_key, capacity),
-            )
+        if self.kind == "postgres":
+            with self._postgres_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        INSERT INTO capacity_settings (day_key, capacity, updated_at)
+                        VALUES (%s, %s, CURRENT_TIMESTAMP)
+                        ON CONFLICT(day_key) DO UPDATE SET capacity=excluded.capacity, updated_at=excluded.updated_at
+                        """,
+                        (day_key, capacity),
+                    )
+        else:
+            with self._sqlite_connection() as conn:
+                conn.execute(
+                    """
+                    INSERT INTO capacity_settings (day_key, capacity, updated_at)
+                    VALUES (?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(day_key) DO UPDATE SET capacity=excluded.capacity, updated_at=excluded.updated_at
+                    """,
+                    (day_key, capacity),
+                )
         return self.get_capacity_settings()
 
     def get_date_counts(self) -> dict:
         """Count applications per date (excluding cancelled/refunded)."""
-        with self._connect() as conn:
-            rows = conn.execute(
-                "SELECT party_date, COUNT(*) FROM applications WHERE status NOT IN ('취소','환불') GROUP BY party_date"
-            ).fetchall()
-        return {r[0]: r[1] for r in rows}
+        if self.kind == "postgres":
+            rows = self._query_all_postgres(
+                "SELECT party_date, COUNT(*) as cnt FROM applications WHERE status NOT IN ('취소','환불') GROUP BY party_date"
+            )
+            return {r["party_date"]: r["cnt"] for r in rows}
+        else:
+            with self._sqlite_connection() as conn:
+                rows = conn.execute(
+                    "SELECT party_date, COUNT(*) FROM applications WHERE status NOT IN ('취소','환불') GROUP BY party_date"
+                ).fetchall()
+            return {r[0]: r[1] for r in rows}
 
     def get_scarcity_info(self) -> dict:
         caps = self.get_capacity_settings()
