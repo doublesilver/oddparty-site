@@ -78,8 +78,13 @@ if (track) {
   });
 }
 
+/* --- Reveal helper --- */
+function revealPage() {
+  document.querySelectorAll('.dynamic-load').forEach(function(el) { el.classList.add('loaded'); });
+}
+
 /* --- Hero scarcity badge (dynamic) --- */
-(async function() {
+async function loadScarcityBadge() {
   try {
     const res = await fetch('https://oddparty-api-production.up.railway.app/api/scarcity');
     if (!res.ok) return;
@@ -138,10 +143,10 @@ if (track) {
       }
     }
   } catch { /* no backend */ }
-})();
+}
 
 /* --- FAQ dynamic loading --- */
-(async function loadFaq() {
+async function loadFaq() {
   const container = document.getElementById('faq-list-container');
   if (!container) return;
 
@@ -189,10 +194,10 @@ if (track) {
       }
     });
   });
-})();
+}
 
 /* --- Dynamic site content from admin --- */
-(async function loadSiteContent() {
+async function loadSiteContent() {
   try {
     const res = await fetch('https://oddparty-api-production.up.railway.app/api/site-content');
     if (!res.ok) return;
@@ -220,13 +225,11 @@ if (track) {
         });
       } catch { /* invalid pricing JSON */ }
     }
-    /* Reveal dynamically loaded sections */
-    document.querySelectorAll('.dynamic-load').forEach(function(el) { el.classList.add('loaded'); });
-  } catch {
-    /* no backend — show defaults */
-    document.querySelectorAll('.dynamic-load').forEach(function(el) { el.classList.add('loaded'); });
-  }
-})();
+  } catch { /* no backend */ }
+}
+
+/* Load all dynamic data in parallel, then reveal page */
+Promise.all([loadScarcityBadge(), loadFaq(), loadSiteContent()]).finally(revealPage);
 
 /* --- Scroll fade-up --- */
 const fadeObserver = new IntersectionObserver((entries) => {

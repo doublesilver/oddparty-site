@@ -76,9 +76,16 @@ if (data) {
 } /* end renderComplete */
 
 /* =============================================
+   REVEAL HELPER
+   ============================================= */
+function revealPage() {
+  document.querySelectorAll('.dynamic-load').forEach(function(el) { el.classList.add('loaded'); });
+}
+
+/* =============================================
    DYNAMIC SITE CONTENT FROM ADMIN
    ============================================= */
-(async function loadSiteContent() {
+async function loadSiteContent() {
   try {
     const res = await fetch('https://oddparty-api-production.up.railway.app/api/site-content');
     if (!res.ok) return;
@@ -90,12 +97,12 @@ if (data) {
       if (el) el.innerHTML = val.replace(/\n/g, '<br/>');
     });
   } catch { /* no backend */ }
-})();
+}
 
 /* =============================================
    ACCOUNT INFO (dynamic from API)
    ============================================= */
-(async function loadAccountInfo() {
+async function loadAccountInfo() {
   try {
     const res = await fetch('https://oddparty-api-production.up.railway.app/api/account');
     if (!res.ok) return;
@@ -107,13 +114,11 @@ if (data) {
     if (bank && bankEl) bankEl.textContent = bank;
     if (account_number && accountEl) accountEl.textContent = account_number;
     if (holder && holderEl) holderEl.textContent = '예금주: ' + holder;
-    /* Reveal payment card */
-    document.querySelectorAll('.dynamic-load').forEach(function(el) { el.classList.add('loaded'); });
-  } catch {
-    /* no backend — show defaults */
-    document.querySelectorAll('.dynamic-load').forEach(function(el) { el.classList.add('loaded'); });
-  }
-})();
+  } catch { /* no backend */ }
+}
+
+/* Load all dynamic data, then reveal page */
+Promise.all([loadSiteContent(), loadAccountInfo()]).finally(revealPage);
 
 /* =============================================
    COPY ACCOUNT
