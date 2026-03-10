@@ -62,6 +62,37 @@ if (track) {
   });
 }
 
+/* --- Gallery auto-slide --- */
+if (track) {
+  let autoSlideIdx = 0;
+  const autoSlide = setInterval(() => {
+    const cards = track.querySelectorAll('.gallery-card');
+    if (!cards.length) return;
+    autoSlideIdx = (autoSlideIdx + 1) % cards.length;
+    const cardW = cards[0].offsetWidth + 12;
+    track.scrollTo({ left: cardW * autoSlideIdx, behavior: 'smooth' });
+  }, 4000);
+  // Stop auto-slide on user interaction
+  ['mousedown', 'touchstart', 'wheel'].forEach(evt => {
+    track.addEventListener(evt, () => clearInterval(autoSlide), { once: true });
+  });
+}
+
+/* --- Hero scarcity badge (dynamic) --- */
+(async function() {
+  try {
+    const res = await fetch('/api/scarcity');
+    if (!res.ok) return;
+    const data = await res.json();
+    const dates = data.dates || {};
+    const urgentDays = Object.values(dates).filter(d => d.level === '마감임박' || d.level === '마감');
+    const badge = document.querySelector('.scarcity-badge');
+    if (badge && urgentDays.length > 0) {
+      badge.querySelector('.scarcity-dot')?.classList.add('urgent');
+    }
+  } catch { /* no backend */ }
+})();
+
 /* --- Scroll fade-up --- */
 const fadeObserver = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });

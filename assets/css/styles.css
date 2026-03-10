@@ -839,6 +839,16 @@ input {
 /* ============================================================
    FORM PAGE — page-wrap, header, payment card compact
    ============================================================ */
+.form-logo-wrap {
+  text-align: center;
+  padding: var(--sp-xl) 0 var(--sp-sm);
+}
+.form-page-logo {
+  width: 120px;
+  height: auto;
+  margin: 0 auto;
+  filter: drop-shadow(0 0 16px rgba(167, 139, 250, 0.35));
+}
 .page-wrap {
   max-width: 600px;
   margin: 0 auto;
