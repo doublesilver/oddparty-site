@@ -201,11 +201,28 @@ if (track) {
     if (!res.ok) return;
     const data = await res.json();
     const content = data.content || {};
+
+    /* Apply text content */
     Object.entries(content).forEach(([key, val]) => {
       if (!val || key === 'pricing' || key === 'scarcity-badge-text' || key === 'sticky-cta-text' || key === 'instagram-id') return;
       const el = document.getElementById(key);
       if (el) el.innerHTML = val.replace(/\n/g, '<br/>');
     });
+
+    /* Apply dynamic pricing to price cards */
+    if (content.pricing) {
+      try {
+        const pricing = typeof content.pricing === 'string' ? JSON.parse(content.pricing) : content.pricing;
+        const fmt = n => Number(n).toLocaleString('ko-KR');
+        ['건대', '영등포'].forEach(branch => {
+          if (!pricing[branch]) return;
+          const maleEl = document.getElementById('main-price-' + branch + '-male');
+          const femaleEl = document.getElementById('main-price-' + branch + '-female');
+          if (maleEl) maleEl.textContent = fmt(pricing[branch].male);
+          if (femaleEl) femaleEl.textContent = fmt(pricing[branch].female);
+        });
+      } catch { /* invalid pricing JSON */ }
+    }
   } catch { /* no backend */ }
 })();
 

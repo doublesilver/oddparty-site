@@ -51,13 +51,41 @@
 })();
 
 /* =============================================
-   PRICE DATA
+   PRICE DATA (loaded from API, fallback to defaults)
    ============================================= */
-const PRICES = {
+let PRICES = {
   '건대': { male: 33000, female: 23000 },
   '영등포': { male: 39500, female: 29500 },
 };
-const PART2_BASE = 18000;
+let PART2_BASE = 18000;
+let PART2_DISCOUNT = 10;
+
+(async function loadPricing() {
+  try {
+    const res = await fetch('https://oddparty-api-production.up.railway.app/api/site-content');
+    if (!res.ok) return;
+    const data = await res.json();
+    const raw = (data.content || {}).pricing;
+    if (!raw) return;
+    const pricing = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    ['건대', '영등포'].forEach(branch => {
+      if (pricing[branch]) {
+        PRICES[branch] = { male: Number(pricing[branch].male), female: Number(pricing[branch].female) };
+      }
+    });
+    if (pricing.part2_base) PART2_BASE = Number(pricing.part2_base);
+    if (pricing.part2_discount) PART2_DISCOUNT = Number(pricing.part2_discount);
+    /* Update 2부 labels */
+    const onsiteEl = document.getElementById('part2OnsitePrice');
+    if (onsiteEl) onsiteEl.textContent = '현장가 ' + fmtPrice(PART2_BASE);
+    const discountLabel = document.getElementById('part2DiscountLabel');
+    if (discountLabel) discountLabel.textContent = PART2_DISCOUNT + '% 할인';
+    /* Refresh displayed prices */
+    updateBranchPriceLabels();
+    updatePart2PrepayPrice();
+    updatePrice();
+  } catch { /* use defaults */ }
+})();
 
 function fmtPrice(n) {
   return n.toLocaleString('ko-KR') + '원';
@@ -155,10 +183,10 @@ function updatePrice() {
     const price1 = PRICES[branch][gender];
     if (joinPart2) {
       if (part2pay === 'prepay') {
-        const total = Math.round((price1 + PART2_BASE) * 0.9);
-        text.innerHTML = `<strong>${branch}점 1+2부 선결제</strong> · <span class="dynamic-price">${fmtPrice(total)}</span> <small style="color:var(--muted)">(10% 할인)</small>`;
+        const total = Math.round((price1 + PART2_BASE) * (1 - PART2_DISCOUNT / 100));
+        text.innerHTML = `<strong>${branch}점 1+2부 선결제</strong> · <span class="dynamic-price">${fmtPrice(total)}</span> <small style="color:var(--muted)">(${PART2_DISCOUNT}% 할인)</small>`;
       } else {
-        text.innerHTML = `<strong>${branch}점 1부</strong> · <span class="dynamic-price">${fmtPrice(price1)}</span> + 2부 현장 18,000원`;
+        text.innerHTML = `<strong>${branch}점 1부</strong> · <span class="dynamic-price">${fmtPrice(price1)}</span> + 2부 현장 ${fmtPrice(PART2_BASE)}`;
       }
     } else {
       text.innerHTML = `<strong>${branch}점</strong> · <span class="dynamic-price">${fmtPrice(price1)}</span>`;
@@ -189,7 +217,7 @@ function updatePart2PrepayPrice() {
   const priceEl = document.getElementById('part2PrepayPrice');
   if (!priceEl) return;
   if (price1 > 0) {
-    const prepayTotal = Math.round((price1 + PART2_BASE) * 0.9);
+    const prepayTotal = Math.round((price1 + PART2_BASE) * (1 - PART2_DISCOUNT / 100));
     priceEl.textContent = fmtPrice(prepayTotal);
   } else {
     priceEl.textContent = '성별·지점 선택 후';
@@ -288,7 +316,7 @@ document.getElementById('party-form').addEventListener('submit', async (e) => {
 
   if (joinPart2) {
     if (part2pay === 'prepay') {
-      totalPrice = Math.round((price1 + PART2_BASE) * 0.9);
+      totalPrice = Math.round((price1 + PART2_BASE) * (1 - PART2_DISCOUNT / 100));
       part2Amount = totalPrice - price1;
     } else {
       part2Amount = PART2_BASE;

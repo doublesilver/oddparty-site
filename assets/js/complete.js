@@ -4,21 +4,44 @@
 const raw = sessionStorage.getItem('odd_party_data');
 const data = raw ? JSON.parse(raw) : null;
 
-const PRICES = {
+let PRICES = {
   '건대': { male: 33000, female: 23000 },
   '영등포': { male: 39500, female: 29500 },
 };
+let PART2_BASE = 18000;
+let PART2_DISCOUNT = 10;
 
 function fmtPrice(n) { return n?.toLocaleString('ko-KR') + '원'; }
 function fmtGender(g) { return g === 'male' ? '남성' : g === 'female' ? '여성' : g; }
 
+/* Load pricing from API then render */
+(async function() {
+  try {
+    const res = await fetch('https://oddparty-api-production.up.railway.app/api/site-content');
+    if (res.ok) {
+      const apiData = await res.json();
+      const raw = (apiData.content || {}).pricing;
+      if (raw) {
+        const pricing = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        ['건대', '영등포'].forEach(branch => {
+          if (pricing[branch]) PRICES[branch] = { male: Number(pricing[branch].male), female: Number(pricing[branch].female) };
+        });
+        if (pricing.part2_base) PART2_BASE = Number(pricing.part2_base);
+        if (pricing.part2_discount) PART2_DISCOUNT = Number(pricing.part2_discount);
+      }
+    }
+  } catch { /* use defaults */ }
+  renderComplete();
+})();
+
+function renderComplete() {
 if (data) {
   /* Payment amount */
   const price = data.price || (PRICES[data.branch] && PRICES[data.branch][data.gender]) || 0;
 
   let displayPrice;
   if (data.part2pay === 'prepay') {
-    displayPrice = Math.round((price + 18000) * 0.9);
+    displayPrice = Math.round((price + PART2_BASE) * (1 - PART2_DISCOUNT / 100));
   } else if (data.part2pay === 'onsite') {
     displayPrice = price;
   } else {
@@ -50,6 +73,7 @@ if (data) {
 } else {
   document.getElementById('payment-amount').textContent = '신청 정보 확인 필요';
 }
+} /* end renderComplete */
 
 /* =============================================
    DYNAMIC SITE CONTENT FROM ADMIN
