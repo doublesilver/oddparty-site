@@ -2153,14 +2153,17 @@
 
     function saveContent() {
       var content = {};
+      /* Only save fields that have actual content (skip empty to preserve HTML defaults) */
       CONTENT_FIELD_IDS.forEach(function(id) {
         var el = document.getElementById(id);
-        if (el) content[id] = el.value;
+        if (el && el.value && el.value.trim()) content[id] = el.value;
       });
 
-      /* Also collect from pending iframe edits */
+      /* Also collect from pending iframe edits (these are intentional changes) */
       Object.keys(pendingChanges).forEach(function(id) {
-        content[id] = pendingChanges[id];
+        if (pendingChanges[id] && pendingChanges[id].trim()) {
+          content[id] = pendingChanges[id];
+        }
       });
 
       /* Include scarcity overrides in content */

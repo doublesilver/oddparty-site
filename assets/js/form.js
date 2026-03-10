@@ -57,7 +57,8 @@
   try {
     const res = await fetch('https://oddparty-api-production.up.railway.app/api/account');
     if (!res.ok) return;
-    const { bank, account_number, holder } = await res.json();
+    const data = await res.json();
+    const { bank, account_number, holder } = data.account || data;
     const bankEl = document.getElementById('form-bank-name');
     const accountEl = document.getElementById('account-number');
     const holderEl = document.getElementById('form-account-holder');
