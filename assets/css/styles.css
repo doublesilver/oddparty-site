@@ -76,7 +76,7 @@ body {
   font-family: var(--font);
   font-size: var(--fs-base);
   color: var(--ink);
-  background: var(--gradient-bg);
+  background: #0d0a18 url('../images/party-hero.webp') center top / 100% auto repeat-y;
   min-height: 100dvh;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
