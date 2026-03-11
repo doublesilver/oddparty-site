@@ -2026,6 +2026,7 @@
        CAPACITY
     ============================================================ */
     var _partyDates = []; /* [{date: "2026-03-14", label: "14일(토)", dayName: "토요일"}] */
+    var _scarcityOverrides = {}; /* {"토요일": "모집중", "금요일": "마감"} */
     var _defaultDays = ['금요일', '토요일', '일요일'];
 
     function _getDefaultPartyDates() {
@@ -2053,10 +2054,13 @@
     function loadCapacity() {
       Promise.all([
         fetch(API_BASE + '/api/capacity', { headers: { 'Authorization': 'Bearer ' + state.token } }).then(function(r) { return r.ok ? r.json() : {}; }),
-        fetch(API_BASE + '/api/party-dates', { headers: { 'Authorization': 'Bearer ' + state.token } }).then(function(r) { return r.ok ? r.json() : { dates: [] }; })
+        fetch(API_BASE + '/api/party-dates', { headers: { 'Authorization': 'Bearer ' + state.token } }).then(function(r) { return r.ok ? r.json() : { dates: [] }; }),
+        fetch(API_BASE + '/api/site-content').then(function(r) { return r.ok ? r.json() : {}; })
       ]).then(function(results) {
         var capData = results[0];
         _partyDates = (results[1].dates || []);
+        var siteContent = (results[2].content || {});
+        try { _scarcityOverrides = JSON.parse(siteContent.scarcity_override || '{}'); } catch(e) { _scarcityOverrides = {}; }
         renderCapacity(capData);
         renderPartyDatesList();
       }).catch(function() {
@@ -2078,14 +2082,24 @@
           '<button class="save-btn" style="padding:6px 14px;font-size:var(--fs-xs);" onclick="initDefaultDates()">기본 금/토/일 날짜 생성</button>';
         return;
       }
+      var scarcityColors = { '모집중': '#22c55e', '마감임박': '#f59e0b', '마감': '#ef4444' };
       var html = '<table style="width:100%;font-size:var(--fs-sm);border-collapse:collapse;">';
       html += '<thead><tr style="text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">';
-      html += '<th style="padding:6px;">표시명</th><th style="padding:6px;">날짜</th><th style="padding:6px;">요일</th><th style="padding:6px;text-align:right;">관리</th></tr></thead><tbody>';
+      html += '<th style="padding:6px;">표시명</th><th style="padding:6px;">날짜</th><th style="padding:6px;">요일</th><th style="padding:6px;">상태</th><th style="padding:6px;text-align:right;">관리</th></tr></thead><tbody>';
       _partyDates.forEach(function(d, i) {
+        var currentStatus = _scarcityOverrides[d.dayName] || '모집중';
+        var statusColor = scarcityColors[currentStatus] || '#22c55e';
         html += '<tr style="border-bottom:1px solid var(--border);">';
         html += '<td style="padding:6px;font-weight:600;">' + esc(d.label || d.date) + '</td>';
         html += '<td style="padding:6px;">' + esc(d.date || '') + '</td>';
         html += '<td style="padding:6px;">' + esc(d.dayName || '') + '</td>';
+        html += '<td style="padding:6px;">';
+        html += '<select onchange="changePartyDateStatus(' + i + ', this.value)" style="padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:' + statusColor + ';font-weight:600;font-size:var(--fs-xs);cursor:pointer;">';
+        ['모집중', '마감임박', '마감'].forEach(function(s) {
+          html += '<option value="' + s + '"' + (s === currentStatus ? ' selected' : '') + '>' + s + '</option>';
+        });
+        html += '</select>';
+        html += '</td>';
         html += '<td style="padding:6px;text-align:right;white-space:nowrap;">';
         html += '<button class="save-btn" style="padding:4px 10px;font-size:var(--fs-xs);margin-right:4px;" onclick="editPartyDate(' + i + ')">수정</button>';
         html += '<button class="save-btn" style="padding:4px 10px;font-size:var(--fs-xs);background:#ef4444;" onclick="removePartyDate(' + i + ')">삭제</button>';
@@ -2112,6 +2126,24 @@
       if (newDayName === null) return;
       _partyDates[idx] = { date: newDate.trim(), label: newLabel.trim(), dayName: newDayName.trim() };
       savePartyDates();
+    }
+
+    function changePartyDateStatus(idx, newStatus) {
+      var dayName = _partyDates[idx].dayName;
+      if (!dayName) return;
+      _scarcityOverrides[dayName] = newStatus;
+      /* Save scarcity overrides to site content */
+      fetch(API_BASE + '/api/site-content', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ content: { scarcity_override: JSON.stringify(_scarcityOverrides) } })
+      })
+      .then(function(r) {
+        if (!r.ok) throw new Error();
+        showToast(dayName + ' 상태가 "' + newStatus + '"(으)로 변경되었습니다.');
+        renderPartyDatesList();
+      })
+      .catch(function() { showToast('상태 변경 실패', true); });
     }
 
     function savePartyDates() {
