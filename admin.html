@@ -1142,7 +1142,7 @@
           <!-- 파티 날짜 추가 -->
           <div class="content-group" style="margin-bottom:var(--sp-xl);">
             <p class="content-group-title">파티 날짜 관리</p>
-            <p style="color:var(--muted);font-size:var(--fs-xs);margin-bottom:var(--sp-md);">기본 금/토/일 외에 공휴일 등 추가 파티 날짜를 설정할 수 있습니다. 추가된 날짜는 신청 페이지에 자동 표시됩니다.</p>
+            <p style="color:var(--muted);font-size:var(--fs-xs);margin-bottom:var(--sp-md);">신청 페이지에 표시되는 날짜를 관리합니다. 기본 금/토/일 외에 공휴일 등 추가 파티 날짜를 설정할 수 있습니다.</p>
             <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:var(--sp-md);">
               <div>
                 <label class="content-label">날짜</label>
@@ -2028,6 +2028,28 @@
     var _partyDates = []; /* [{date: "2026-03-14", label: "14일(토)", dayName: "토요일"}] */
     var _defaultDays = ['금요일', '토요일', '일요일'];
 
+    function _getDefaultPartyDates() {
+      /* 다가오는 금/토/일 날짜를 자동 계산 */
+      var now = new Date();
+      var day = now.getDay();
+      var daysUntilFri = (5 - day + 7) % 7;
+      if (daysUntilFri === 0 && now.getHours() >= 23) daysUntilFri = 7;
+      var fri = new Date(now); fri.setDate(now.getDate() + daysUntilFri);
+      var sat = new Date(fri); sat.setDate(fri.getDate() + 1);
+      var sun = new Date(fri); sun.setDate(fri.getDate() + 2);
+      var shortDay = { '금요일': '금', '토요일': '토', '일요일': '일' };
+      var map = { '금요일': fri, '토요일': sat, '일요일': sun };
+      return _defaultDays.map(function(dayName) {
+        var d = map[dayName];
+        var fmt = function(dt) { return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0'); };
+        return {
+          date: fmt(d),
+          label: d.getDate() + '일(' + shortDay[dayName] + ')',
+          dayName: dayName
+        };
+      });
+    }
+
     function loadCapacity() {
       Promise.all([
         fetch(API_BASE + '/api/capacity', { headers: { 'Authorization': 'Bearer ' + state.token } }).then(function(r) { return r.ok ? r.json() : {}; }),
@@ -2043,28 +2065,52 @@
       });
     }
 
+    function initDefaultDates() {
+      _partyDates = _getDefaultPartyDates();
+      savePartyDates();
+    }
+
     function renderPartyDatesList() {
       var el = document.getElementById('party-dates-list');
       if (!el) return;
       if (_partyDates.length === 0) {
-        el.innerHTML = '<p style="color:var(--muted);">추가된 날짜가 없습니다. 기본 금/토/일만 표시됩니다.</p>';
+        el.innerHTML = '<p style="color:var(--muted);margin-bottom:8px;">설정된 날짜가 없습니다. 신청 페이지에 기본 금/토/일이 표시됩니다.</p>' +
+          '<button class="save-btn" style="padding:6px 14px;font-size:var(--fs-xs);" onclick="initDefaultDates()">기본 금/토/일 날짜 생성</button>';
         return;
       }
-      var html = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+      var html = '<table style="width:100%;font-size:var(--fs-sm);border-collapse:collapse;">';
+      html += '<thead><tr style="text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">';
+      html += '<th style="padding:6px;">표시명</th><th style="padding:6px;">날짜</th><th style="padding:6px;">요일</th><th style="padding:6px;text-align:right;">관리</th></tr></thead><tbody>';
       _partyDates.forEach(function(d, i) {
-        html += '<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--primary-soft);border-radius:var(--r-full);font-size:var(--fs-xs);">' +
-          '<strong>' + esc(d.label || d.date) + '</strong>' +
-          ' (' + esc(d.dayName || '') + ')' +
-          '<button type="button" onclick="removePartyDate(' + i + ')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0 2px;">✕</button>' +
-        '</span>';
+        html += '<tr style="border-bottom:1px solid var(--border);">';
+        html += '<td style="padding:6px;font-weight:600;">' + esc(d.label || d.date) + '</td>';
+        html += '<td style="padding:6px;">' + esc(d.date || '') + '</td>';
+        html += '<td style="padding:6px;">' + esc(d.dayName || '') + '</td>';
+        html += '<td style="padding:6px;text-align:right;white-space:nowrap;">';
+        html += '<button class="save-btn" style="padding:4px 10px;font-size:var(--fs-xs);margin-right:4px;" onclick="editPartyDate(' + i + ')">수정</button>';
+        html += '<button class="save-btn" style="padding:4px 10px;font-size:var(--fs-xs);background:#ef4444;" onclick="removePartyDate(' + i + ')">삭제</button>';
+        html += '</td>';
+        html += '</tr>';
       });
-      html += '</div>';
+      html += '</tbody></table>';
       el.innerHTML = html;
     }
 
     function removePartyDate(idx) {
-      if (!confirm(_partyDates[idx].label + ' 날짜를 삭제하시겠습니까?')) return;
+      if (!confirm((_partyDates[idx].label || _partyDates[idx].date) + ' 날짜를 삭제하시겠습니까?')) return;
       _partyDates.splice(idx, 1);
+      savePartyDates();
+    }
+
+    function editPartyDate(idx) {
+      var d = _partyDates[idx];
+      var newLabel = prompt('표시명:', d.label || d.date);
+      if (newLabel === null) return;
+      var newDate = prompt('날짜 (YYYY-MM-DD):', d.date || '');
+      if (newDate === null) return;
+      var newDayName = prompt('요일명 (예: 토요일):', d.dayName || '');
+      if (newDayName === null) return;
+      _partyDates[idx] = { date: newDate.trim(), label: newLabel.trim(), dayName: newDayName.trim() };
       savePartyDates();
     }
 

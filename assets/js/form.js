@@ -130,7 +130,7 @@ async function loadAccountInfo() {
 }
 
 /* =============================================
-   CUSTOM PARTY DATES (from admin)
+   PARTY DATES (from admin — replaces defaults when set)
    ============================================= */
 async function loadPartyDates() {
   try {
@@ -143,10 +143,11 @@ async function loadPartyDates() {
     const grid = document.getElementById('date-radio-grid');
     if (!grid) return;
 
+    /* Admin이 날짜를 설정했으면 기본 금/토/일 대신 전체 교체 */
+    grid.innerHTML = '';
+
     dates.forEach(function(d) {
       var value = d.label || d.date;
-      var existing = grid.querySelector('input[name="date"][value="' + CSS.escape(value) + '"]');
-      if (existing) return;
 
       var label = document.createElement('label');
       label.className = 'radio-card-label';
@@ -179,7 +180,7 @@ async function loadPartyDates() {
     var count = grid.querySelectorAll('.radio-card-label').length;
     grid.className = 'radio-grid radio-grid-' + Math.min(count, 4);
     initRadioCards('date');
-  } catch { /* no custom dates */ }
+  } catch { /* no custom dates — keep defaults */ }
 }
 
 /* Load all dynamic data, then reveal page */
