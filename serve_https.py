@@ -588,7 +588,7 @@ class ApplicationStore:
             return 0
         if self.kind == "postgres":  # pragma: no cover
             placeholders = ",".join(["%s"] * len(ids))
-            with self._pg_connection() as conn:
+            with self._postgres_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(f"DELETE FROM applications WHERE id IN ({placeholders})", tuple(ids))
                     return cur.rowcount
