@@ -8,5 +8,12 @@ data/
 # Secrets
 .admin_token
 
+# Test / CI
+.coverage
+.pytest_cache/
+
+# OMC plugin state
+.omc/
+
 # OS / editor files
 .DS_Store
