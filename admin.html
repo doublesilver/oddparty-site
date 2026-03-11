@@ -901,6 +901,27 @@
     .toast.err { background: var(--accent); }
     .toast.show { opacity: 1; transform: translateY(0); }
 
+    /* ── Checkbox bulk actions ── */
+    .bulk-actions-bar {
+      display: none;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: 10px var(--sp-lg);
+      background: var(--primary-soft);
+      border-radius: var(--r-md);
+      margin-bottom: var(--sp-md);
+      font-size: var(--fs-sm);
+    }
+    .bulk-actions-bar.visible { display: flex; }
+    .bulk-actions-bar .bulk-count { font-weight: 700; color: var(--primary); }
+    .bulk-delete-btn {
+      padding: 6px 16px; font-family: var(--font); font-size: var(--fs-xs); font-weight: 600;
+      color: #fff; background: var(--accent); border: none; border-radius: var(--r-md); cursor: pointer;
+    }
+    .bulk-delete-btn:hover { opacity: 0.9; }
+    .app-table .cell-check { width: 36px; text-align: center; }
+    .app-table .cell-check input[type="checkbox"] { cursor: pointer; width: 16px; height: 16px; }
+
     /* ── Responsive ── */
     @media (max-width: 1024px) {
       .stat-grid { grid-template-columns: repeat(2, 1fr); }
@@ -966,6 +987,7 @@
     <div class="admin-tabs" id="admin-tabs">
       <button class="admin-tab-btn active" data-target="sec-dashboard">대시보드</button>
       <button class="admin-tab-btn" data-target="sec-capacity">날짜별 정원</button>
+      <button class="admin-tab-btn" data-target="sec-branch">지점 관리</button>
       <button class="admin-tab-btn" data-target="sec-pricing">가격 설정</button>
       <button class="admin-tab-btn" data-target="sec-faq">FAQ</button>
       <button class="admin-tab-btn" data-target="sec-discount">할인코드</button>
@@ -987,6 +1009,11 @@
           <li class="sidebar-nav-item">
             <button class="sidebar-nav-btn" data-target="sec-capacity" type="button">
               <span class="sidebar-nav-icon">🗓️</span> 날짜별 정원 설정
+            </button>
+          </li>
+          <li class="sidebar-nav-item">
+            <button class="sidebar-nav-btn" data-target="sec-branch" type="button">
+              <span class="sidebar-nav-icon">🏢</span> 지점 관리
             </button>
           </li>
           <li class="sidebar-nav-item">
@@ -1048,24 +1075,8 @@
             </div>
           </div>
 
-          <!-- Revenue stats -->
-          <div class="revenue-grid" id="revenue-grid" style="display:none;">
-            <div class="revenue-card">
-              <div class="revenue-card-label">총 매출 (입금완료)</div>
-              <div class="revenue-card-value" id="rev-total">0원</div>
-              <div class="revenue-card-sub" id="rev-total-count">0건</div>
-            </div>
-            <div class="revenue-card">
-              <div class="revenue-card-label">건대점 매출</div>
-              <div class="revenue-card-value" id="rev-건대">0원</div>
-              <div class="revenue-card-sub" id="rev-건대-count">0건</div>
-            </div>
-            <div class="revenue-card">
-              <div class="revenue-card-label">영등포점 매출</div>
-              <div class="revenue-card-value" id="rev-영등포">0원</div>
-              <div class="revenue-card-sub" id="rev-영등포-count">0건</div>
-            </div>
-          </div>
+          <!-- Revenue stats (dynamically generated) -->
+          <div class="revenue-grid" id="revenue-grid" style="display:none;"></div>
 
           <!-- Toolbar -->
           <div class="dash-toolbar">
@@ -1080,14 +1091,9 @@
             </select>
             <select class="dash-select" id="filter-branch">
               <option value="">전체 지점</option>
-              <option value="건대">건대</option>
-              <option value="영등포">영등포</option>
             </select>
             <select class="dash-select" id="filter-date">
               <option value="">전체 날짜</option>
-              <option value="금요일">금요일</option>
-              <option value="토요일">토요일</option>
-              <option value="일요일">일요일</option>
             </select>
             <input class="dash-search" type="date" id="filter-date-from" style="flex:0;min-width:130px;" title="시작일" />
             <input class="dash-search" type="date" id="filter-date-to" style="flex:0;min-width:130px;" title="종료일" />
@@ -1096,11 +1102,18 @@
             <button class="dash-btn dash-btn-primary" id="btn-refresh" type="button">↻ 새로고침</button>
           </div>
 
+          <div class="bulk-actions-bar" id="bulk-actions-bar">
+            <span><span class="bulk-count" id="bulk-count">0</span>명 선택됨</span>
+            <button class="bulk-delete-btn" id="bulk-delete-btn" type="button">선택 삭제</button>
+            <button class="dash-btn" id="bulk-cancel-btn" type="button" style="font-size:var(--fs-xs);">선택 취소</button>
+          </div>
+
           <!-- Table -->
           <div class="table-wrap">
             <table class="app-table">
               <thead>
                 <tr>
+                  <th class="cell-check"><input type="checkbox" id="check-all" title="전체 선택" /></th>
                   <th>신청일시</th>
                   <th>이름(나이)</th>
                   <th>전화번호</th>
@@ -1113,7 +1126,7 @@
                 </tr>
               </thead>
               <tbody id="app-tbody">
-                <tr class="loading-row"><td colspan="9">불러오는 중…</td></tr>
+                <tr class="loading-row"><td colspan="10">불러오는 중…</td></tr>
               </tbody>
             </table>
           </div>
@@ -1125,15 +1138,34 @@
         <!-- ── 정원 관리 ── -->
         <section class="admin-section" id="sec-capacity">
           <h2 class="admin-section-title">날짜별 정원 설정</h2>
+
+          <!-- 파티 날짜 추가 -->
+          <div class="content-group" style="margin-bottom:var(--sp-xl);">
+            <p class="content-group-title">파티 날짜 관리</p>
+            <p style="color:var(--muted);font-size:var(--fs-xs);margin-bottom:var(--sp-md);">기본 금/토/일 외에 공휴일 등 추가 파티 날짜를 설정할 수 있습니다. 추가된 날짜는 신청 페이지에 자동 표시됩니다.</p>
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:var(--sp-md);">
+              <div>
+                <label class="content-label">날짜</label>
+                <input class="settings-input" type="date" id="new-party-date" style="width:180px;" />
+              </div>
+              <div>
+                <label class="content-label">표시명 (선택)</label>
+                <input class="settings-input" type="text" id="new-party-label" placeholder="예: 3/1(토) 삼일절 특별파티" style="width:240px;" />
+              </div>
+              <button class="save-btn" type="button" id="add-party-date-btn" style="padding:9px 18px;font-size:var(--fs-xs);">날짜 추가</button>
+            </div>
+            <div id="party-dates-list" style="font-size:var(--fs-sm);"></div>
+          </div>
+
           <div class="capacity-grid" id="capacity-grid">
             <div class="content-group" style="text-align:center;color:var(--muted);">불러오는 중…</div>
           </div>
         </section>
 
-        <!-- ── 가격 설정 ── -->
-        <section class="admin-section" id="sec-pricing">
-          <h2 class="admin-section-title">가격 설정</h2>
-          <p style="color:var(--muted);font-size:var(--fs-sm);margin-bottom:var(--sp-lg);">지점별 참가비를 설정합니다. 변경 시 신청 페이지에 즉시 반영됩니다.</p>
+        <!-- ── 지점 관리 ── -->
+        <section class="admin-section" id="sec-branch">
+          <h2 class="admin-section-title">지점 관리</h2>
+          <p style="color:var(--muted);font-size:var(--fs-sm);margin-bottom:var(--sp-lg);">지점을 추가/수정/삭제합니다. 변경 후 반드시 '가격 저장' 버튼을 눌러주세요.</p>
 
           <div id="branch-list-container">
             <!-- 지점 목록이 JS로 동적 생성됩니다 -->
@@ -1142,6 +1174,16 @@
             ＋ 지점 추가
           </button>
 
+          <button type="button" onclick="savePricing()" style="margin-top:var(--sp-md);font-size:var(--fs-sm);padding:10px 24px;background:var(--gradient-btn);color:#fff;border:none;border-radius:var(--r-md);cursor:pointer;font-weight:700;">지점 정보 저장</button>
+          <span class="save-msg" id="branch-save-msg"></span>
+        </section>
+
+        <!-- ── 가격 설정 ── -->
+        <section class="admin-section" id="sec-pricing">
+          <h2 class="admin-section-title">가격 설정</h2>
+          <p style="color:var(--muted);font-size:var(--fs-sm);margin-bottom:var(--sp-lg);">지점별 참가비와 2부 옵션을 설정합니다. 변경 시 신청 페이지에 즉시 반영됩니다.</p>
+
+          <!-- 가격 설정은 지점 관리에서 설정한 지점 기반으로 미리보기 표시 -->
           <div class="content-group">
             <p class="content-group-title">2부 참여</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
@@ -1413,7 +1455,10 @@
     <!-- More menu overlay -->
     <div class="modal-overlay" id="more-menu-overlay" style="display:none;align-items:flex-end;">
       <div class="modal-card" style="max-width:100%;border-radius:var(--r-lg) var(--r-lg) 0 0;padding:var(--sp-lg);">
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-md);text-align:center;">
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:var(--sp-md);text-align:center;">
+          <button class="bottom-nav-btn" data-target="sec-branch" style="min-width:auto;" type="button">
+            <span class="bottom-nav-icon">🏢</span>지점
+          </button>
           <button class="bottom-nav-btn" data-target="sec-faq" style="min-width:auto;" type="button">
             <span class="bottom-nav-icon">❓</span>FAQ
           </button>
@@ -1633,6 +1678,7 @@
 
       if (targetId === 'sec-dashboard') loadDashboard();
       if (targetId === 'sec-capacity') loadCapacity();
+      if (targetId === 'sec-branch')   { loadPricing(); }
       if (targetId === 'sec-pricing')  { loadPricing(); setTimeout(updatePricePreview, 500); }
       if (targetId === 'sec-faq')      loadFaqList();
       if (targetId === 'sec-content')  { loadSiteContent(); loadAccountIntoIframes(); }
@@ -1695,17 +1741,45 @@
         document.getElementById('stat-today').textContent  = stats.todayCount != null ? stats.todayCount : '—';
         document.getElementById('stat-coupon').textContent = stats.couponCount != null ? stats.couponCount : '—';
 
-        // Days breakdown
-        var dayCounts = { '금요일': 0, '토요일': 0, '일요일': 0 };
+        // Days breakdown (dynamic)
+        var dayCounts = {};
         apps.forEach(function(a) {
           if (a.partyDate) {
             var day = String(a.partyDate);
-            Object.keys(dayCounts).forEach(function(k) { if (day.indexOf(k.charAt(0)) !== -1 || day.indexOf(k) !== -1) dayCounts[k]++; });
+            if (!dayCounts[day]) dayCounts[day] = 0;
+            dayCounts[day]++;
           }
         });
         document.getElementById('stat-days').textContent = '';
-        document.getElementById('stat-days-sub').textContent =
-          '금 ' + (dayCounts['금요일'] || 0) + ' / 토 ' + (dayCounts['토요일'] || 0) + ' / 일 ' + (dayCounts['일요일'] || 0);
+        var dayParts = [];
+        Object.keys(dayCounts).forEach(function(d) {
+          dayParts.push(d + ' ' + dayCounts[d]);
+        });
+        document.getElementById('stat-days-sub').textContent = dayParts.join(' / ') || '—';
+
+        // Populate date filter dynamically from actual data
+        var dateSet = {};
+        apps.forEach(function(a) {
+          if (a.partyDate) dateSet[a.partyDate] = true;
+        });
+        var dateSelect = document.getElementById('filter-date');
+        var currentVal = dateSelect.value;
+        dateSelect.innerHTML = '<option value="">전체 날짜</option>';
+        Object.keys(dateSet).sort().forEach(function(d) {
+          dateSelect.innerHTML += '<option value="' + esc(d) + '"' + (currentVal === d ? ' selected' : '') + '>' + esc(d) + '</option>';
+        });
+
+        // Populate branch filter dynamically from actual data
+        var branchSet = {};
+        apps.forEach(function(a) {
+          if (a.branch) branchSet[a.branch] = true;
+        });
+        var branchSelect = document.getElementById('filter-branch');
+        var currentBranch = branchSelect.value;
+        branchSelect.innerHTML = '<option value="">전체 지점</option>';
+        Object.keys(branchSet).sort().forEach(function(b) {
+          branchSelect.innerHTML += '<option value="' + esc(b) + '"' + (currentBranch === b ? ' selected' : '') + '>' + esc(b) + '</option>';
+        });
 
         state.page = 1;
         applyFilters();
@@ -1713,7 +1787,7 @@
       })
       .catch(function(err) {
         if (err.message !== 'unauth') {
-          document.getElementById('app-tbody').innerHTML = '<tr class="loading-row"><td colspan="9">데이터를 불러오지 못했습니다.</td></tr>';
+          document.getElementById('app-tbody').innerHTML = '<tr class="loading-row"><td colspan="10">데이터를 불러오지 못했습니다.</td></tr>';
         }
       });
     }
@@ -1748,7 +1822,7 @@
       var slice = state.filtered.slice(start, start + PAGE_SIZE);
 
       if (slice.length === 0) {
-        tbody.innerHTML = '<tr class="loading-row"><td colspan="9">신청 내역이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr class="loading-row"><td colspan="10">신청 내역이 없습니다.</td></tr>';
         return;
       }
 
@@ -1761,7 +1835,8 @@
         });
         statusHtml += '</select>';
 
-        html += '<tr>' +
+        html += '<tr data-id="' + esc(a.id) + '">' +
+          '<td class="cell-check"><input type="checkbox" class="row-check" data-id="' + esc(a.id) + '" /></td>' +
           '<td>' + esc(formatDate(a.createdAt)) + '</td>' +
           '<td class="cell-name">' + esc(a.name) + (a.age ? ' <span style="color:var(--muted);font-weight:400;">(' + esc(a.age) + ')</span>' : '') + '</td>' +
           '<td class="cell-phone">' + esc(a.phone) + '</td>' +
@@ -1840,6 +1915,69 @@
       });
     }
 
+    /* ============================================================
+       BULK DELETE
+    ============================================================ */
+    function getCheckedIds() {
+      var ids = [];
+      document.querySelectorAll('.row-check:checked').forEach(function(cb) {
+        ids.push(cb.getAttribute('data-id'));
+      });
+      return ids;
+    }
+
+    function updateBulkBar() {
+      var ids = getCheckedIds();
+      var bar = document.getElementById('bulk-actions-bar');
+      document.getElementById('bulk-count').textContent = ids.length;
+      bar.classList.toggle('visible', ids.length > 0);
+    }
+
+    document.getElementById('check-all').addEventListener('change', function() {
+      var checked = this.checked;
+      document.querySelectorAll('.row-check').forEach(function(cb) { cb.checked = checked; });
+      updateBulkBar();
+    });
+
+    document.addEventListener('change', function(e) {
+      if (e.target.classList.contains('row-check')) {
+        updateBulkBar();
+        // Update check-all state
+        var all = document.querySelectorAll('.row-check');
+        var allChecked = document.querySelectorAll('.row-check:checked');
+        document.getElementById('check-all').checked = all.length > 0 && all.length === allChecked.length;
+      }
+    });
+
+    document.getElementById('bulk-delete-btn').addEventListener('click', function() {
+      var ids = getCheckedIds();
+      if (ids.length === 0) return;
+      if (!confirm(ids.length + '명의 신청을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+
+      fetch(API_BASE + '/api/admin/applications/bulk-delete', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ ids: ids })
+      })
+      .then(function(r) {
+        if (!r.ok) throw new Error('bulk_delete_fail');
+        return r.json();
+      })
+      .then(function(data) {
+        showToast(data.deleted_count + '건이 삭제되었습니다.');
+        document.getElementById('check-all').checked = false;
+        updateBulkBar();
+        loadDashboard();
+      })
+      .catch(function() { showToast('삭제에 실패했습니다.', true); });
+    });
+
+    document.getElementById('bulk-cancel-btn').addEventListener('click', function() {
+      document.getElementById('check-all').checked = false;
+      document.querySelectorAll('.row-check').forEach(function(cb) { cb.checked = false; });
+      updateBulkBar();
+    });
+
     function patchApplication(id, body) {
       fetch(API_BASE + '/api/applications/' + encodeURIComponent(id), {
         method: 'PATCH',
@@ -1851,7 +1989,7 @@
         showToast('저장되었습니다.');
         // Sync local state
         state.apps.forEach(function(a) {
-          if (a.id === id) {
+          if (a.id == id) {
             if (body.status !== undefined) a.status = body.status;
             if (body.admin_note !== undefined) a.adminNote = body.admin_note;
           }
@@ -1887,31 +2025,100 @@
     /* ============================================================
        CAPACITY
     ============================================================ */
+    var _partyDates = []; /* [{date: "2026-03-14", label: "14일(토)", dayName: "토요일"}] */
+    var _defaultDays = ['금요일', '토요일', '일요일'];
+
     function loadCapacity() {
-      fetch(API_BASE + '/api/capacity', { headers: { 'Authorization': 'Bearer ' + state.token } })
-      .then(function(r) {
-        if (!r.ok) throw new Error('cap_fail');
-        return r.json();
-      })
-      .then(function(data) {
-        renderCapacity(data);
-      })
-      .catch(function() {
-        // Fallback: try public scarcity endpoint
-        fetch(API_BASE + '/api/scarcity')
-        .then(function(r) { return r.json(); })
-        .then(function(data) { renderCapacity(data); })
-        .catch(function() {
-          document.getElementById('capacity-grid').innerHTML =
-            '<div class="content-group" style="text-align:center;color:var(--muted);">데이터를 불러오지 못했습니다.</div>';
-        });
+      Promise.all([
+        fetch(API_BASE + '/api/capacity', { headers: { 'Authorization': 'Bearer ' + state.token } }).then(function(r) { return r.ok ? r.json() : {}; }),
+        fetch(API_BASE + '/api/party-dates', { headers: { 'Authorization': 'Bearer ' + state.token } }).then(function(r) { return r.ok ? r.json() : { dates: [] }; })
+      ]).then(function(results) {
+        var capData = results[0];
+        _partyDates = (results[1].dates || []);
+        renderCapacity(capData);
+        renderPartyDatesList();
+      }).catch(function() {
+        document.getElementById('capacity-grid').innerHTML =
+          '<div class="content-group" style="text-align:center;color:var(--muted);">데이터를 불러오지 못했습니다.</div>';
       });
     }
+
+    function renderPartyDatesList() {
+      var el = document.getElementById('party-dates-list');
+      if (!el) return;
+      if (_partyDates.length === 0) {
+        el.innerHTML = '<p style="color:var(--muted);">추가된 날짜가 없습니다. 기본 금/토/일만 표시됩니다.</p>';
+        return;
+      }
+      var html = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+      _partyDates.forEach(function(d, i) {
+        html += '<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--primary-soft);border-radius:var(--r-full);font-size:var(--fs-xs);">' +
+          '<strong>' + esc(d.label || d.date) + '</strong>' +
+          ' (' + esc(d.dayName || '') + ')' +
+          '<button type="button" onclick="removePartyDate(' + i + ')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0 2px;">✕</button>' +
+        '</span>';
+      });
+      html += '</div>';
+      el.innerHTML = html;
+    }
+
+    function removePartyDate(idx) {
+      if (!confirm(_partyDates[idx].label + ' 날짜를 삭제하시겠습니까?')) return;
+      _partyDates.splice(idx, 1);
+      savePartyDates();
+    }
+
+    function savePartyDates() {
+      fetch(API_BASE + '/api/admin/party-dates', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ dates: _partyDates })
+      })
+      .then(function(r) {
+        if (!r.ok) throw new Error();
+        showToast('파티 날짜가 저장되었습니다.');
+        renderPartyDatesList();
+        loadCapacity();
+      })
+      .catch(function() { showToast('저장 실패', true); });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var addBtn = document.getElementById('add-party-date-btn');
+      if (addBtn) {
+        addBtn.addEventListener('click', function() {
+          var dateInput = document.getElementById('new-party-date');
+          var labelInput = document.getElementById('new-party-label');
+          var dateVal = dateInput.value;
+          if (!dateVal) { showToast('날짜를 선택해 주세요.', true); return; }
+
+          var d = new Date(dateVal + 'T00:00:00');
+          var dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+          var shortDays = ['일', '월', '화', '수', '목', '금', '토'];
+          var dayName = dayNames[d.getDay()];
+          var defaultLabel = (d.getMonth() + 1) + '/' + d.getDate() + '(' + shortDays[d.getDay()] + ')';
+          var label = labelInput.value.trim() || defaultLabel;
+
+          if (_partyDates.some(function(p) { return p.date === dateVal; })) {
+            showToast('이미 추가된 날짜입니다.', true); return;
+          }
+
+          _partyDates.push({ date: dateVal, label: label, dayName: dayName });
+          savePartyDates();
+          dateInput.value = '';
+          labelInput.value = '';
+        });
+      }
+    });
 
     function renderCapacity(data) {
       var grid = document.getElementById('capacity-grid');
       var dates = data.dates || data;
-      var days = ['금요일', '토요일', '일요일'];
+      var days = _defaultDays.slice();
+      _partyDates.forEach(function(pd) {
+        var key = pd.label || pd.date;
+        if (days.indexOf(key) === -1) days.push(key);
+      });
       var html = '';
 
       days.forEach(function(day) {
@@ -2319,7 +2526,7 @@
       fetch(API_BASE + '/api/discount-codes', { headers: authHeaders() })
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        var codes = data.codes || [];
+        var codes = data.discount_codes || data.codes || [];
         var el = document.getElementById('dc-list');
         if (!codes.length) {
           el.innerHTML = '<p style="color:var(--muted);font-size:var(--fs-sm);">발급된 할인코드가 없습니다.</p>';
@@ -2397,7 +2604,7 @@
         { k: '이름', v: app.name },
         { k: '나이', v: app.age ? app.age + '세' : '—' },
         { k: '전화번호', v: app.phone },
-        { k: '성별', v: app.gender === 'male' ? '남성' : app.gender === 'female' ? '여성' : (app.gender || '—') },
+        { k: '성별', v: app.gender === 'male' ? '남성' : app.gender === 'female' ? '여성' : (app.priceText && app.priceText.charAt(0) === '남' ? '남성' : app.priceText && app.priceText.charAt(0) === '여' ? '여성' : '—') },
         { k: '지점', v: app.branch || '—' },
         { k: '파티날짜', v: app.partyDate || '—' },
         { k: '금액', v: app.priceText || (app.totalPrice ? app.totalPrice.toLocaleString() + '원' : '—') },
@@ -2408,10 +2615,31 @@
         { k: 'ID', v: app.id },
       ];
       var html = fields.map(function(f) {
+        if (f.k === '파티날짜') {
+          return '<div class="modal-detail-row"><span class="modal-detail-key">' + esc(f.k) + '</span>' +
+            '<span class="modal-detail-val" style="display:flex;align-items:center;gap:8px;">' +
+            '<input type="text" id="modal-edit-date" value="' + esc(f.v) + '" class="note-input" style="width:140px;" />' +
+            '<button type="button" id="modal-save-date" style="font-size:11px;padding:3px 10px;background:var(--gradient-btn);color:#fff;border:none;border-radius:4px;cursor:pointer;">저장</button>' +
+            '</span></div>';
+        }
         return '<div class="modal-detail-row"><span class="modal-detail-key">' + esc(f.k) + '</span><span class="modal-detail-val">' + esc(f.v) + '</span></div>';
       }).join('');
       document.getElementById('modal-body').innerHTML = html;
       document.getElementById('detail-modal').style.display = 'flex';
+
+      var saveDateBtn = document.getElementById('modal-save-date');
+      if (saveDateBtn) {
+        saveDateBtn.addEventListener('click', function() {
+          var newDate = document.getElementById('modal-edit-date').value.trim();
+          if (!newDate) return;
+          patchApplication(modalAppId, { party_date: newDate });
+          state.apps.forEach(function(a) {
+            if (a.id == modalAppId) a.partyDate = newDate;
+          });
+          showToast('파티 날짜가 수정되었습니다.');
+          applyFilters();
+        });
+      }
     }
 
     function closeDetailModal() {
@@ -2447,15 +2675,16 @@
     ============================================================ */
     function updateRevenueStats() {
       var paid = state.apps.filter(function(a) { return a.status === '입금완료'; });
+      var grid = document.getElementById('revenue-grid');
       if (paid.length === 0) {
-        document.getElementById('revenue-grid').style.display = 'none';
+        grid.style.display = 'none';
         return;
       }
-      document.getElementById('revenue-grid').style.display = 'grid';
+      grid.style.display = 'grid';
 
       var total = 0, branchData = {};
       paid.forEach(function(a) {
-        var price = a.totalPrice || a.price || 0;
+        var price = a.totalPrice || a.priceAmount || a.price || 0;
         total += price;
         var b = a.branch || '기타';
         if (!branchData[b]) branchData[b] = { sum: 0, count: 0 };
@@ -2463,15 +2692,17 @@
         branchData[b].count++;
       });
 
-      document.getElementById('rev-total').textContent = total.toLocaleString() + '원';
-      document.getElementById('rev-total-count').textContent = paid.length + '건';
-      ['건대', '영등포'].forEach(function(b) {
-        var d = branchData[b] || { sum: 0, count: 0 };
-        var valEl = document.getElementById('rev-' + b);
-        var cntEl = document.getElementById('rev-' + b + '-count');
-        if (valEl) valEl.textContent = d.sum.toLocaleString() + '원';
-        if (cntEl) cntEl.textContent = d.count + '건';
+      var html = '<div class="revenue-card"><div class="revenue-card-label">총 매출 (입금완료)</div>' +
+        '<div class="revenue-card-value">' + total.toLocaleString() + '원</div>' +
+        '<div class="revenue-card-sub">' + paid.length + '건</div></div>';
+      Object.keys(branchData).sort().forEach(function(b) {
+        var d = branchData[b];
+        html += '<div class="revenue-card"><div class="revenue-card-label">' + esc(b) + '점 매출</div>' +
+          '<div class="revenue-card-value">' + d.sum.toLocaleString() + '원</div>' +
+          '<div class="revenue-card-sub">' + d.count + '건</div></div>';
       });
+      grid.innerHTML = html;
+      grid.style.gridTemplateColumns = 'repeat(' + Math.min(Object.keys(branchData).length + 1, 4) + ', 1fr)';
     }
 
     /* ============================================================
@@ -2589,12 +2820,11 @@
 
         /* ── Scarcity badge dropdown (form page only) ── */
         if (iframeId === 'preview-form') {
-          var scarcityIds = ['scarcity-금요일', 'scarcity-토요일', 'scarcity-일요일'];
           var scarcityLevels = ['모집중', '마감임박', '마감'];
 
-          scarcityIds.forEach(function(badgeId) {
-            var badge = iDoc.getElementById(badgeId);
-            if (!badge) return;
+          iDoc.querySelectorAll('[id^="scarcity-"]').forEach(function(badge) {
+            var badgeId = badge.id;
+            if (!badgeId) return;
             badge.setAttribute('data-admin-scarcity', badgeId);
             badge.style.pointerEvents = 'auto';
             badge.style.cursor = 'pointer';

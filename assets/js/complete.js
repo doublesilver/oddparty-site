@@ -1,4 +1,8 @@
 /* =============================================
+   COMPLETE PAGE — depends on common.js (API_BASE, esc, fmtPrice, revealPage)
+   ============================================= */
+
+/* =============================================
    LOAD & RENDER SESSION DATA
    ============================================= */
 const raw = sessionStorage.getItem('odd_party_data');
@@ -11,13 +15,12 @@ let PRICES = {
 let PART2_BASE = 18000;
 let PART2_DISCOUNT = 10;
 
-function fmtPrice(n) { return n?.toLocaleString('ko-KR') + '원'; }
 function fmtGender(g) { return g === 'male' ? '남성' : g === 'female' ? '여성' : g; }
 
 /* Load pricing from API then render */
 (async function() {
   try {
-    const res = await fetch('https://oddparty-api-production.up.railway.app/api/site-content');
+    const res = await fetch(API_BASE + '/api/site-content');
     if (res.ok) {
       const apiData = await res.json();
       const raw = (apiData.content || {}).pricing;
@@ -39,21 +42,18 @@ function fmtGender(g) { return g === 'male' ? '남성' : g === 'female' ? '여�
 
 function renderComplete() {
 if (data) {
-  /* Payment amount */
   const price = data.price || (PRICES[data.branch] && PRICES[data.branch][data.gender]) || 0;
 
   let displayPrice;
   if (data.part2pay === 'prepay') {
     displayPrice = Math.round((price + PART2_BASE) * (1 - PART2_DISCOUNT / 100));
-  } else if (data.part2pay === 'onsite') {
-    displayPrice = price;
   } else {
     displayPrice = price;
   }
 
   document.getElementById('payment-amount').textContent = fmtPrice(displayPrice);
 
-  /* Summary rows */
+  /* Summary rows — built with DOM API (XSS-safe) */
   const rows = [
     { key: '이름', val: data.name },
     { key: '나이', val: data.age + '세' },
@@ -67,39 +67,38 @@ if (data) {
   ];
 
   const body = document.getElementById('summary-body');
-  body.innerHTML = rows.map(r => `
-    <div class="summary-row">
-      <span class="summary-key">${r.key}</span>
-      <span class="summary-val">${r.val ?? '—'}</span>
-    </div>
-  `).join('');
+  body.innerHTML = '';
+  rows.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'summary-row';
+    const keySpan = document.createElement('span');
+    keySpan.className = 'summary-key';
+    keySpan.textContent = r.key;
+    const valSpan = document.createElement('span');
+    valSpan.className = 'summary-val';
+    valSpan.textContent = r.val ?? '—';
+    row.appendChild(keySpan);
+    row.appendChild(valSpan);
+    body.appendChild(row);
+  });
 } else {
   document.getElementById('payment-amount').textContent = '신청 정보 확인 필요';
 }
 } /* end renderComplete */
 
 /* =============================================
-   REVEAL HELPER
-   ============================================= */
-function revealPage() {
-  if (revealPage._done) return;
-  revealPage._done = true;
-  document.querySelectorAll('.dynamic-load').forEach(function(el) { el.classList.add('loaded'); });
-}
-
-/* =============================================
    DYNAMIC SITE CONTENT FROM ADMIN
    ============================================= */
 async function loadSiteContent() {
   try {
-    const res = await fetch('https://oddparty-api-production.up.railway.app/api/site-content');
+    const res = await fetch(API_BASE + '/api/site-content');
     if (!res.ok) return;
     const data = await res.json();
     const content = data.content || {};
     Object.entries(content).forEach(([key, val]) => {
       if (!val || !key.startsWith('complete-')) return;
       const el = document.getElementById(key);
-      if (el) el.innerHTML = val.replace(/\n/g, '<br/>');
+      if (el) el.innerHTML = esc(val).replace(/\n/g, '<br/>');
     });
   } catch { /* no backend */ }
 }
@@ -109,7 +108,7 @@ async function loadSiteContent() {
    ============================================= */
 async function loadAccountInfo() {
   try {
-    const res = await fetch('https://oddparty-api-production.up.railway.app/api/account');
+    const res = await fetch(API_BASE + '/api/account');
     if (!res.ok) return;
     const data = await res.json();
     const { bank, account_number, holder } = data.account || data;
@@ -123,7 +122,6 @@ async function loadAccountInfo() {
 }
 
 /* Load all dynamic data, then reveal page */
-/* Reveal when all APIs done OR after 800ms max wait */
 var _apiDone = Promise.all([loadSiteContent(), loadAccountInfo()]);
 var _timeout = new Promise(function(r) { setTimeout(r, 800); });
 Promise.race([_apiDone, _timeout]).then(revealPage);
@@ -137,7 +135,7 @@ function copyAccount() {
   navigator.clipboard.writeText(account).then(() => {
     const btn = document.getElementById('copy-account-btn');
     const orig = btn.innerHTML;
-    btn.innerHTML = '✓ 복사됨';
+    btn.textContent = '✓ 복사됨';
     setTimeout(() => { btn.innerHTML = orig; }, 2000);
   }).catch(() => {});
 }
@@ -147,14 +145,20 @@ function copyAccount() {
    ============================================= */
 (async function() {
   try {
-    const res = await fetch('https://oddparty-api-production.up.railway.app/api/scarcity');
+    const res = await fetch(API_BASE + '/api/scarcity');
     if (!res.ok) return;
     const data = await res.json();
     if (data.instagram_id) {
       const link = document.querySelector('.btn-instagram');
       if (link) {
-        link.href = 'https://www.instagram.com/' + data.instagram_id;
-        link.innerHTML = link.innerHTML.replace(/@[\w.]+/, '@' + data.instagram_id);
+        link.href = 'https://www.instagram.com/' + encodeURIComponent(data.instagram_id);
+        const textNode = link.childNodes;
+        for (let i = 0; i < textNode.length; i++) {
+          if (textNode[i].nodeType === 3 && textNode[i].textContent.includes('@')) {
+            textNode[i].textContent = textNode[i].textContent.replace(/@[\w.]+/, '@' + data.instagram_id);
+            break;
+          }
+        }
       }
     }
   } catch { /* no backend */ }
@@ -167,7 +171,7 @@ function sharePage() {
   if (navigator.share) {
     navigator.share({
       title: 'ODD PARTY — 낯선 사람들이 만나는 밤',
-      text: '나도 ODD PARTY 신청했어! 같이 가자 🎉',
+      text: '나도 ODD PARTY 신청했어! 같이 가자',
       url: location.origin + '/index.html'
     }).catch(() => {});
   } else {

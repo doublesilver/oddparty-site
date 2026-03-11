@@ -1,3 +1,7 @@
+/* =============================================
+   MAIN PAGE — depends on common.js (API_BASE, esc, fmtPrice, revealPage)
+   ============================================= */
+
 /* --- Sticky CTA visibility --- */
 const hero = document.getElementById('hero');
 const stickyCta = document.getElementById('sticky-cta');
@@ -72,23 +76,15 @@ if (track) {
     const cardW = cards[0].offsetWidth + 12;
     track.scrollTo({ left: cardW * autoSlideIdx, behavior: 'smooth' });
   }, 4000);
-  // Stop auto-slide on user interaction
   ['mousedown', 'touchstart', 'wheel'].forEach(evt => {
     track.addEventListener(evt, () => clearInterval(autoSlide), { once: true });
   });
 }
 
-/* --- Reveal helper --- */
-function revealPage() {
-  if (revealPage._done) return;
-  revealPage._done = true;
-  document.querySelectorAll('.dynamic-load').forEach(function(el) { el.classList.add('loaded'); });
-}
-
 /* --- Hero scarcity badge (dynamic) --- */
 async function loadScarcityBadge() {
   try {
-    const res = await fetch('https://oddparty-api-production.up.railway.app/api/scarcity');
+    const res = await fetch(API_BASE + '/api/scarcity');
     if (!res.ok) return;
     const data = await res.json();
     const dates = data.dates || {};
@@ -98,7 +94,6 @@ async function loadScarcityBadge() {
     const dot = badge.querySelector('.scarcity-dot');
     const textEl = badge.querySelector('.scarcity-text');
 
-    // 관리자 수동 설정 문구가 있으면 우선 사용
     if (data.custom_badge_text) {
       if (textEl) textEl.textContent = data.custom_badge_text;
       if (dot) dot.classList.add('urgent');
@@ -108,7 +103,6 @@ async function loadScarcityBadge() {
       return;
     }
 
-    // 자동 단계별 텍스트
     const levels = Object.values(dates).map(d => d.level);
     const closedCount = levels.filter(l => l === '마감').length;
     const urgentCount = levels.filter(l => l === '마감임박').length;
@@ -116,7 +110,7 @@ async function loadScarcityBadge() {
     let text = '';
     let isUrgent = false;
 
-    if (closedCount === 3) {
+    if (closedCount === levels.length && levels.length > 0) {
       text = '이번 주 파티 전일 마감!';
       isUrgent = true;
     } else if (closedCount > 0) {
@@ -135,7 +129,6 @@ async function loadScarcityBadge() {
     if (dot && isUrgent) dot.classList.add('urgent');
     badge.style.display = '';
 
-    // sticky-cta 텍스트도 동기화
     const stickyCtatext = document.getElementById('sticky-cta-text');
     if (stickyCtatext) {
       if (data.custom_sticky_text) {
@@ -162,36 +155,54 @@ async function loadFaq() {
 
   let items = FALLBACK_FAQ;
   try {
-    const res = await fetch('https://oddparty-api-production.up.railway.app/api/faq');
+    const res = await fetch(API_BASE + '/api/faq');
     if (res.ok) {
       const data = await res.json();
       if (data.faq && data.faq.length > 0) items = data.faq;
     }
   } catch { /* use fallback */ }
 
-  container.innerHTML = items.map(f => `
-    <li class="faq-item">
-      <button class="faq-q" aria-expanded="false">
-        <span class="faq-q-text">${f.question}</span>
-        <span class="faq-icon" aria-hidden="true">+</span>
-      </button>
-      <div class="faq-a" role="region">
-        <div class="faq-a-inner">${f.answer}</div>
-      </div>
-    </li>
-  `).join('');
+  /* Build FAQ items using DOM API to prevent XSS */
+  container.innerHTML = '';
+  items.forEach(f => {
+    const li = document.createElement('li');
+    li.className = 'faq-item';
 
-  // Re-bind accordion
-  container.querySelectorAll('.faq-q').forEach(btn => {
+    const btn = document.createElement('button');
+    btn.className = 'faq-q';
+    btn.setAttribute('aria-expanded', 'false');
+
+    const qText = document.createElement('span');
+    qText.className = 'faq-q-text';
+    qText.textContent = f.question;
+    btn.appendChild(qText);
+
+    const icon = document.createElement('span');
+    icon.className = 'faq-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = '+';
+    btn.appendChild(icon);
+
+    const ansDiv = document.createElement('div');
+    ansDiv.className = 'faq-a';
+    ansDiv.setAttribute('role', 'region');
+    const ansInner = document.createElement('div');
+    ansInner.className = 'faq-a-inner';
+    ansInner.textContent = f.answer;
+    ansDiv.appendChild(ansInner);
+
+    li.appendChild(btn);
+    li.appendChild(ansDiv);
+    container.appendChild(li);
+
     btn.addEventListener('click', () => {
-      const item = btn.closest('.faq-item');
-      const isOpen = item.classList.contains('open');
+      const isOpen = li.classList.contains('open');
       container.querySelectorAll('.faq-item.open').forEach(i => {
         i.classList.remove('open');
         i.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
       });
       if (!isOpen) {
-        item.classList.add('open');
+        li.classList.add('open');
         btn.setAttribute('aria-expanded', 'true');
       }
     });
@@ -201,43 +212,45 @@ async function loadFaq() {
 /* --- Dynamic site content from admin --- */
 async function loadSiteContent() {
   try {
-    const res = await fetch('https://oddparty-api-production.up.railway.app/api/site-content');
+    const res = await fetch(API_BASE + '/api/site-content');
     if (!res.ok) return;
     const data = await res.json();
     const content = data.content || {};
 
-    /* Apply text content */
+    /* Apply text content (sanitized) */
     Object.entries(content).forEach(([key, val]) => {
       if (!val || key === 'pricing' || key === 'scarcity_override' || key === 'scarcity-badge-text' || key === 'sticky-cta-text' || key === 'instagram-id') return;
       const el = document.getElementById(key);
-      if (el) el.innerHTML = val.replace(/\n/g, '<br/>');
+      if (el) el.innerHTML = esc(val).replace(/\n/g, '<br/>');
     });
 
     /* Build dynamic price cards from pricing data */
     if (content.pricing) {
       try {
         const pricing = typeof content.pricing === 'string' ? JSON.parse(content.pricing) : content.pricing;
-        const fmt = n => Number(n).toLocaleString('ko-KR');
         const grid = document.getElementById('main-price-grid');
         if (grid) {
           const branches = Object.keys(pricing).filter(k => k !== 'part2_base' && k !== 'part2_discount');
           if (branches.length > 0) {
-            grid.innerHTML = branches.map(branch => {
+            grid.innerHTML = '';
+            branches.forEach(branch => {
               const p = pricing[branch];
               const note = p.note || '';
-              return '<div class="price-card">' +
+              const card = document.createElement('div');
+              card.className = 'price-card';
+              card.innerHTML =
                 '<div class="price-card-accent" aria-hidden="true"></div>' +
-                '<span class="price-card-badge">' + branch + '</span>' +
-                '<p class="price-card-name">' + branch + '점</p>' +
+                '<span class="price-card-badge">' + esc(branch) + '</span>' +
+                '<p class="price-card-name">' + esc(branch) + '점</p>' +
                 '<div class="price-row"><span class="price-label">남</span>' +
-                  '<span class="price-val">' + fmt(p.male) + '</span>' +
+                  '<span class="price-val">' + esc(fmtPrice(p.male)) + '</span>' +
                   '<span style="font-size:var(--fs-xs);color:var(--muted)">원</span></div>' +
                 '<div class="price-row"><span class="price-label">여</span>' +
-                  '<span class="price-val price-val-accent">' + fmt(p.female) + '</span>' +
+                  '<span class="price-val price-val-accent">' + esc(fmtPrice(p.female)) + '</span>' +
                   '<span style="font-size:var(--fs-xs);color:var(--muted)">원</span></div>' +
-                (note ? '<p class="price-note">' + note + '</p>' : '') +
-              '</div>';
-            }).join('');
+                (note ? '<p class="price-note">' + esc(note) + '</p>' : '');
+              grid.appendChild(card);
+            });
           }
         }
       } catch { /* invalid pricing JSON */ }
@@ -246,7 +259,6 @@ async function loadSiteContent() {
 }
 
 /* Load all dynamic data in parallel, then reveal page */
-/* Reveal when all APIs done OR after 800ms max wait */
 var _apiDone = Promise.all([loadScarcityBadge(), loadFaq(), loadSiteContent()]);
 var _timeout = new Promise(function(r) { setTimeout(r, 800); });
 Promise.race([_apiDone, _timeout]).then(revealPage);
@@ -263,7 +275,7 @@ function sharePage() {
   if (navigator.share) {
     navigator.share({
       title: 'ODD PARTY — 낯선 사람들이 만나는 밤',
-      text: '20-30대 소셜 파티, ODD PARTY 같이 가자! 🎉',
+      text: '20-30대 소셜 파티, ODD PARTY 같이 가자!',
       url: location.origin + '/index.html'
     }).catch(() => {});
   } else {
@@ -275,7 +287,7 @@ function copyLink() {
     const btn = document.getElementById('copy-link-btn');
     if (!btn) return;
     const orig = btn.innerHTML;
-    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 복사됨!';
+    btn.textContent = '복사됨!';
     setTimeout(() => { btn.innerHTML = orig; }, 2000);
   });
 }

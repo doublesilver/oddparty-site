@@ -1,11 +1,6 @@
 /* =============================================
-   REVEAL HELPER — show page after all API loads
+   FORM PAGE — depends on common.js (API_BASE, esc, fmtPrice, revealPage)
    ============================================= */
-function revealPage() {
-  if (revealPage._done) return;
-  revealPage._done = true;
-  document.querySelectorAll('.dynamic-load').forEach(function(el) { el.classList.add('loaded'); });
-}
 
 /* =============================================
    DATE LABELS — show "13일(금)" format
@@ -36,7 +31,7 @@ function revealPage() {
    ============================================= */
 async function loadScarcity() {
   try {
-    const res = await fetch('https://oddparty-api-production.up.railway.app/api/scarcity');
+    const res = await fetch(API_BASE + '/api/scarcity');
     if (!res.ok) return;
     const data = await res.json();
     const dates = data.dates || {};
@@ -64,20 +59,44 @@ async function loadScarcity() {
 }
 
 /* =============================================
-   DYNAMIC SITE CONTENT FROM ADMIN
+   DYNAMIC SITE CONTENT + PRICING (single fetch)
    ============================================= */
-async function loadSiteContent() {
+async function loadSiteContentAndPricing() {
   try {
-    const res = await fetch('https://oddparty-api-production.up.railway.app/api/site-content');
+    const res = await fetch(API_BASE + '/api/site-content');
     if (!res.ok) return;
     const data = await res.json();
     const content = data.content || {};
+
+    /* Apply text content (sanitized) */
     Object.entries(content).forEach(([key, val]) => {
       if (!val || !key.startsWith('form-')) return;
       const el = document.getElementById(key);
-      if (el) el.innerHTML = val.replace(/\n/g, '<br/>');
+      if (el) el.innerHTML = esc(val).replace(/\n/g, '<br/>');
     });
-  } catch { /* no backend */ }
+
+    /* Load pricing from same response */
+    const raw = content.pricing;
+    if (!raw) return;
+    const pricing = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const newPrices = {};
+    Object.keys(pricing).forEach(key => {
+      if (key === 'part2_base' || key === 'part2_discount') return;
+      newPrices[key] = { male: Number(pricing[key].male), female: Number(pricing[key].female), note: pricing[key].note || '' };
+    });
+    if (Object.keys(newPrices).length > 0) PRICES = newPrices;
+    if (pricing.part2_base) PART2_BASE = Number(pricing.part2_base);
+    if (pricing.part2_discount) PART2_DISCOUNT = Number(pricing.part2_discount);
+
+    renderBranchCards();
+    const onsiteEl = document.getElementById('part2OnsitePrice');
+    if (onsiteEl) onsiteEl.textContent = '현장가 ' + fmtPrice(PART2_BASE);
+    const discountLabel = document.getElementById('part2DiscountLabel');
+    if (discountLabel) discountLabel.textContent = PART2_DISCOUNT + '% 할인';
+    updateBranchPriceLabels();
+    updatePart2PrepayPrice();
+    updatePrice();
+  } catch { /* use defaults */ }
 }
 
 /* =============================================
@@ -85,7 +104,7 @@ async function loadSiteContent() {
    ============================================= */
 async function loadAccountInfo() {
   try {
-    const res = await fetch('https://oddparty-api-production.up.railway.app/api/account');
+    const res = await fetch(API_BASE + '/api/account');
     if (!res.ok) return;
     const data = await res.json();
     const { bank, account_number, holder } = data.account || data;
@@ -110,9 +129,61 @@ async function loadAccountInfo() {
   } catch { /* no backend */ }
 }
 
+/* =============================================
+   CUSTOM PARTY DATES (from admin)
+   ============================================= */
+async function loadPartyDates() {
+  try {
+    const res = await fetch(API_BASE + '/api/party-dates');
+    if (!res.ok) return;
+    const data = await res.json();
+    const dates = data.dates || [];
+    if (dates.length === 0) return;
+
+    const grid = document.getElementById('date-radio-grid');
+    if (!grid) return;
+
+    dates.forEach(function(d) {
+      var value = d.label || d.date;
+      var existing = grid.querySelector('input[name="date"][value="' + CSS.escape(value) + '"]');
+      if (existing) return;
+
+      var label = document.createElement('label');
+      label.className = 'radio-card-label';
+      var input = document.createElement('input');
+      input.className = 'radio-card-input';
+      input.type = 'radio';
+      input.name = 'date';
+      input.value = value;
+      label.appendChild(input);
+
+      var nameSpan = document.createElement('span');
+      nameSpan.className = 'radio-card-name';
+      nameSpan.textContent = value;
+      label.appendChild(nameSpan);
+
+      var subSpan = document.createElement('span');
+      subSpan.className = 'radio-card-sub';
+      subSpan.textContent = d.dayName || '';
+      label.appendChild(subSpan);
+
+      var badgeSpan = document.createElement('span');
+      badgeSpan.className = 'radio-card-badge available';
+      badgeSpan.id = 'scarcity-' + value;
+      badgeSpan.textContent = '모집중';
+      label.appendChild(badgeSpan);
+
+      grid.appendChild(label);
+    });
+
+    var count = grid.querySelectorAll('.radio-card-label').length;
+    grid.className = 'radio-grid radio-grid-' + Math.min(count, 4);
+    initRadioCards('date');
+  } catch { /* no custom dates */ }
+}
+
 /* Load all dynamic data, then reveal page */
-/* Reveal when all APIs done OR after 800ms max wait */
-var _apiDone = Promise.all([loadScarcity(), loadSiteContent(), loadAccountInfo()]);
+var _apiDone = Promise.all([loadScarcity(), loadSiteContentAndPricing(), loadAccountInfo(), loadPartyDates()]);
 var _timeout = new Promise(function(r) { setTimeout(r, 800); });
 Promise.race([_apiDone, _timeout]).then(revealPage);
 _apiDone.finally(revealPage);
@@ -134,56 +205,40 @@ function getBranchNames() {
 function renderBranchCards() {
   const grid = document.getElementById('branch-radio-grid');
   if (!grid) return;
-  const count = getBranchNames().length;
+  const names = getBranchNames();
+  const count = names.length;
   grid.className = 'radio-grid radio-grid-' + Math.min(count, 4);
-  grid.innerHTML = getBranchNames().map(branch => {
-    const p = PRICES[branch];
-    return '<label class="radio-card-label">' +
-      '<input class="radio-card-input" type="radio" name="branch" value="' + branch + '" />' +
-      '<span class="radio-card-name">\uD83C\uDFE2 ' + branch + '</span>' +
-      '<span class="radio-card-sub" id="branch-price-' + branch + '">남 ' + fmtPrice(p.male) + ' / 여 ' + fmtPrice(p.female) + '</span>' +
-    '</label>';
-  }).join('');
+  grid.innerHTML = '';
+  names.forEach(function(branch) {
+    var p = PRICES[branch];
+    var label = document.createElement('label');
+    label.className = 'radio-card-label';
+
+    var input = document.createElement('input');
+    input.className = 'radio-card-input';
+    input.type = 'radio';
+    input.name = 'branch';
+    input.value = branch;
+    label.appendChild(input);
+
+    var nameSpan = document.createElement('span');
+    nameSpan.className = 'radio-card-name';
+    nameSpan.textContent = '\uD83C\uDFE2 ' + branch;
+    label.appendChild(nameSpan);
+
+    var subSpan = document.createElement('span');
+    subSpan.className = 'radio-card-sub';
+    subSpan.id = 'branch-price-' + branch;
+    subSpan.textContent = '남 ' + fmtPrice(p.male) + ' / 여 ' + fmtPrice(p.female);
+    label.appendChild(subSpan);
+
+    grid.appendChild(label);
+  });
   initRadioCards('branch');
 }
 
-(async function loadPricing() {
-  try {
-    const res = await fetch('https://oddparty-api-production.up.railway.app/api/site-content');
-    if (!res.ok) return;
-    const data = await res.json();
-    const raw = (data.content || {}).pricing;
-    if (!raw) return;
-    const pricing = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    /* Build PRICES from all branch keys */
-    const newPrices = {};
-    Object.keys(pricing).forEach(key => {
-      if (key === 'part2_base' || key === 'part2_discount') return;
-      newPrices[key] = { male: Number(pricing[key].male), female: Number(pricing[key].female), note: pricing[key].note || '' };
-    });
-    if (Object.keys(newPrices).length > 0) PRICES = newPrices;
-    if (pricing.part2_base) PART2_BASE = Number(pricing.part2_base);
-    if (pricing.part2_discount) PART2_DISCOUNT = Number(pricing.part2_discount);
-    /* Render branch cards */
-    renderBranchCards();
-    /* Update 2부 labels */
-    const onsiteEl = document.getElementById('part2OnsitePrice');
-    if (onsiteEl) onsiteEl.textContent = '현장가 ' + fmtPrice(PART2_BASE);
-    const discountLabel = document.getElementById('part2DiscountLabel');
-    if (discountLabel) discountLabel.textContent = PART2_DISCOUNT + '% 할인';
-    /* Refresh displayed prices */
-    updateBranchPriceLabels();
-    updatePart2PrepayPrice();
-    updatePrice();
-  } catch { /* use defaults */ }
-})();
-
 /* Render default branch cards immediately */
 renderBranchCards();
-
-function fmtPrice(n) {
-  return n.toLocaleString('ko-KR') + '원';
-}
 
 function getPrice1() {
   const gender = document.querySelector('input[name="gender"]:checked')?.value;
@@ -195,7 +250,6 @@ function getPrice1() {
 /* =============================================
    PRE-SELECT GENDER FROM URL PARAMS
    ============================================= */
-/* Pre-select gender from URL params */
 const urlParams = new URLSearchParams(window.location.search);
 const preGender = urlParams.get('gender');
 if (preGender) {
@@ -275,20 +329,21 @@ function updatePrice() {
 
   if (gender && branch) {
     const price1 = PRICES[branch][gender];
+    const branchEsc = esc(branch);
     if (joinPart2) {
       if (part2pay === 'prepay') {
         const total = Math.round((price1 + PART2_BASE) * (1 - PART2_DISCOUNT / 100));
-        text.innerHTML = `<strong>${branch}점 1+2부 선결제</strong> · <span class="dynamic-price">${fmtPrice(total)}</span> <small style="color:var(--muted)">(${PART2_DISCOUNT}% 할인)</small>`;
+        text.innerHTML = `<strong>${branchEsc}점 1+2부 선결제</strong> · <span class="dynamic-price">${fmtPrice(total)}</span> <small style="color:var(--muted)">(${PART2_DISCOUNT}% 할인)</small>`;
       } else {
-        text.innerHTML = `<strong>${branch}점 1부</strong> · <span class="dynamic-price">${fmtPrice(price1)}</span> + 2부 현장 ${fmtPrice(PART2_BASE)}`;
+        text.innerHTML = `<strong>${branchEsc}점 1부</strong> · <span class="dynamic-price">${fmtPrice(price1)}</span> + 2부 현장 ${fmtPrice(PART2_BASE)}`;
       }
     } else {
-      text.innerHTML = `<strong>${branch}점</strong> · <span class="dynamic-price">${fmtPrice(price1)}</span>`;
+      text.innerHTML = `<strong>${branchEsc}점</strong> · <span class="dynamic-price">${fmtPrice(price1)}</span>`;
     }
   } else if (gender && !branch) {
-    text.innerHTML = `지점을 선택하면 가격이 표시됩니다.`;
+    text.textContent = '지점을 선택하면 가격이 표시됩니다.';
   } else {
-    text.innerHTML = `성별을 선택하면 가격이 표시됩니다.`;
+    text.textContent = '성별을 선택하면 가격이 표시됩니다.';
   }
 }
 
@@ -336,7 +391,7 @@ document.getElementById('copy-account-btn').addEventListener('click', function (
   navigator.clipboard.writeText(account).then(() => {
     const btn = this;
     const orig = btn.innerHTML;
-    btn.innerHTML = '✓ 복사됨';
+    btn.textContent = '✓ 복사됨';
     setTimeout(() => { btn.innerHTML = orig; }, 2000);
   }).catch(() => {});
 });
@@ -417,6 +472,32 @@ document.getElementById('party-form').addEventListener('submit', async (e) => {
     }
   }
 
+  /* Validate discount code if entered */
+  let discountAmount = 0;
+  if (discount) {
+    try {
+      const vRes = await fetch(API_BASE + '/api/discount/validate?code=' + encodeURIComponent(discount));
+      if (vRes.ok) {
+        const vData = await vRes.json();
+        if (vData.valid) {
+          if (vData.discount_type === 'percent') {
+            discountAmount = Math.round(totalPrice * vData.discount_value / 100);
+          } else {
+            discountAmount = vData.discount_value || 0;
+          }
+          totalPrice = Math.max(0, totalPrice - discountAmount);
+        } else {
+          btn.disabled = false;
+          btn.classList.remove('loading');
+          showError('err-discount', true);
+          return;
+        }
+      }
+    } catch {
+      /* Backend unreachable — proceed without validation */
+    }
+  }
+
   const formData = {
     name,
     age,
@@ -425,6 +506,7 @@ document.getElementById('party-form').addEventListener('submit', async (e) => {
     branch,
     date,
     discount,
+    discountAmount,
     price: price1,
     joinPart2,
     part2pay: part2pay || null,
@@ -435,7 +517,7 @@ document.getElementById('party-form').addEventListener('submit', async (e) => {
   sessionStorage.setItem('odd_party_data', JSON.stringify(formData));
 
   try {
-    await fetch('https://oddparty-api-production.up.railway.app/api/applications', {
+    await fetch(API_BASE + '/api/applications', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),

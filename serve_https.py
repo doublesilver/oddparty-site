@@ -81,7 +81,7 @@ class ApplicationStore:
         self.kind = "postgres" if self.database_url else "sqlite"
 
     def initialize(self) -> None:
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             self._init_postgres()
             return
 
@@ -152,7 +152,7 @@ class ApplicationStore:
             )
 
     def get_capacity_settings(self) -> dict:
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             rows = self._query_all_postgres("SELECT day_key, capacity FROM capacity_settings")
             settings = {r["day_key"]: r["capacity"] for r in rows}
         else:
@@ -166,7 +166,7 @@ class ApplicationStore:
         return settings
 
     def set_capacity(self, day_key: str, capacity: int) -> dict:
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             with self._postgres_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
@@ -191,7 +191,7 @@ class ApplicationStore:
 
     def get_date_counts(self) -> dict:
         """Count applications per date (excluding cancelled/refunded)."""
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             rows = self._query_all_postgres(
                 "SELECT party_date, COUNT(*) as cnt FROM applications WHERE status NOT IN ('취소','환불') GROUP BY party_date"
             )
@@ -207,7 +207,8 @@ class ApplicationStore:
         caps = self.get_capacity_settings()
         counts = self.get_date_counts()
         result = {}
-        for day in ("금요일", "토요일", "일요일"):
+        all_days = set(caps.keys()) | set(counts.keys())
+        for day in all_days:
             cap = caps.get(day, 30)
             count = counts.get(day, 0)
             ratio = count / cap if cap > 0 else 0
@@ -223,7 +224,7 @@ class ApplicationStore:
     def create_application(self, payload: dict) -> dict:
         normalized = self._normalize_payload(payload)
 
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             application_id = self._insert_postgres(normalized)
             return self.get_application(application_id)
 
@@ -254,7 +255,7 @@ class ApplicationStore:
         return self.get_application(application_id)
 
     def get_application(self, application_id: int) -> dict | None:
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             row = self._query_one_postgres(
                 "SELECT * FROM applications WHERE id = %s",
                 (application_id,),
@@ -272,7 +273,7 @@ class ApplicationStore:
         return self._serialize_row(row)
 
     def list_applications(self) -> dict:
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             rows = self._query_all_postgres("SELECT * FROM applications ORDER BY id DESC")
         else:
             with self._sqlite_connection() as connection:
@@ -289,7 +290,7 @@ class ApplicationStore:
         }
 
     def update_application(self, application_id: int, updates: dict) -> dict | None:
-        allowed_fields = {"status", "admin_note"}
+        allowed_fields = {"status", "admin_note", "party_date"}
         filtered = {k: str(v).strip() for k, v in updates.items() if k in allowed_fields and v is not None}
         if not filtered:
             return self.get_application(application_id)
@@ -298,7 +299,7 @@ class ApplicationStore:
         if not existing:
             return None
 
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             set_clause = ", ".join(f"{k} = %s" for k in filtered)
             self._query_one_postgres(
                 f"UPDATE applications SET {set_clause} WHERE id = %s",
@@ -341,7 +342,7 @@ class ApplicationStore:
         }
 
     def get_site_content(self) -> dict:
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             rows = self._query_all_postgres(
                 "SELECT content_key, content_value FROM site_content ORDER BY content_key ASC"
             )
@@ -363,7 +364,7 @@ class ApplicationStore:
         if not normalized:
             return self.get_site_content()
 
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             with self._postgres_connection() as connection:
                 with connection.cursor() as cursor:
                     cursor.executemany(
@@ -394,7 +395,7 @@ class ApplicationStore:
         return self.get_site_content()
 
     def get_discount_codes(self) -> list[dict]:
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             rows = self._query_all_postgres("SELECT * FROM discount_codes ORDER BY id DESC")
         else:
             with self._sqlite_connection() as conn:
@@ -402,7 +403,7 @@ class ApplicationStore:
         return [self._serialize_discount(row) for row in rows]
 
     def create_discount_code(self, code: str, discount_type: str, discount_value: int, max_uses: int) -> dict:
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             row = self._query_one_postgres(
                 """
                 INSERT INTO discount_codes (code, discount_type, discount_value, max_uses)
@@ -433,7 +434,7 @@ class ApplicationStore:
         return data
 
     def validate_discount_code(self, code: str) -> dict | None:
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             row = self._query_one_postgres(
                 "SELECT * FROM discount_codes WHERE code = %s AND is_active = 1",
                 (code,),
@@ -452,7 +453,7 @@ class ApplicationStore:
         return data
 
     def increment_discount_usage(self, code: str) -> None:
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             self._query_one_postgres(
                 "UPDATE discount_codes SET used_count = used_count + 1 WHERE code = %s",
                 (code,),
@@ -472,7 +473,7 @@ class ApplicationStore:
             query_pg = "SELECT * FROM faq ORDER BY sort_order ASC, id ASC"
             query_sq = "SELECT * FROM faq ORDER BY sort_order ASC, id ASC"
 
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             rows = self._query_all_postgres(query_pg)
         else:
             with self._sqlite_connection() as conn:
@@ -480,7 +481,7 @@ class ApplicationStore:
         return [self._serialize_faq(row) for row in rows]
 
     def create_faq_item(self, question: str, answer: str, sort_order: int) -> dict:
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             row = self._query_one_postgres(
                 """
                 INSERT INTO faq (question, answer, sort_order)
@@ -502,7 +503,7 @@ class ApplicationStore:
             return self._serialize_faq(row)
 
     def update_faq_item(self, faq_id: int, question: str, answer: str, sort_order: int, is_active: int) -> dict | None:
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             row = self._query_one_postgres(
                 """
                 UPDATE faq SET question = %s, answer = %s, sort_order = %s, is_active = %s
@@ -527,7 +528,7 @@ class ApplicationStore:
             return self._serialize_faq(row)
 
     def delete_faq_item(self, faq_id: int) -> None:
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             self._query_one_postgres("DELETE FROM faq WHERE id = %s", (faq_id,))
         else:
             with self._sqlite_connection() as conn:
@@ -537,12 +538,28 @@ class ApplicationStore:
         existing = self.get_application(application_id)
         if not existing:
             return False
-        if self.kind == "postgres":
+        if self.kind == "postgres":  # pragma: no cover
             self._query_one_postgres("DELETE FROM applications WHERE id = %s", (application_id,))
         else:
             with self._sqlite_connection() as conn:
                 conn.execute("DELETE FROM applications WHERE id = ?", (application_id,))
         return True
+
+    def bulk_delete_applications(self, ids: list[int]) -> int:
+        """Delete multiple applications in a single query. Returns count deleted."""
+        if not ids:
+            return 0
+        if self.kind == "postgres":  # pragma: no cover
+            placeholders = ",".join(["%s"] * len(ids))
+            with self._pg_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(f"DELETE FROM applications WHERE id IN ({placeholders})", tuple(ids))
+                    return cur.rowcount
+        else:
+            placeholders = ",".join(["?"] * len(ids))
+            with self._sqlite_connection() as conn:
+                cur = conn.execute(f"DELETE FROM applications WHERE id IN ({placeholders})", ids)
+                return cur.rowcount
 
     def get_account_info(self) -> dict:
         stored = self.get_site_content_value("account")
@@ -629,17 +646,6 @@ class ApplicationStore:
             "admin_note": admin_note,
         }
 
-    def _parse_location(self, raw_value: object) -> tuple[str, str, str, int]:
-        raw_text = self._require_text(raw_value, "지점 정보", 120)
-        parts = [part.strip() for part in raw_text.split("|")]
-        if len(parts) != 3:
-            raise ValidationError("지점 정보를 다시 선택해 주세요.")
-
-        branch, price_text, location_note = parts
-        digits = re.sub(r"[^0-9]", "", price_text)
-        price_amount = int(digits) if digits else 0
-        return branch, price_text, location_note, price_amount
-
     @staticmethod
     def _normalize_site_content(content: dict) -> dict:
         if not isinstance(content, dict):
@@ -702,7 +708,7 @@ class ApplicationStore:
         connection.row_factory = sqlite3.Row
         return connection
 
-    def _init_postgres(self) -> None:
+    def _init_postgres(self) -> None:  # pragma: no cover
         with self._postgres_connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -769,7 +775,7 @@ class ApplicationStore:
                     """
                 )
 
-    def _insert_postgres(self, normalized: dict) -> int:
+    def _insert_postgres(self, normalized: dict) -> int:  # pragma: no cover
         row = self._query_one_postgres(
             """
             INSERT INTO applications (
@@ -795,7 +801,7 @@ class ApplicationStore:
         )
         return row["id"]
 
-    def _query_one_postgres(self, query: str, params: tuple = ()) -> dict | None:
+    def _query_one_postgres(self, query: str, params: tuple = ()) -> dict | None:  # pragma: no cover
         from psycopg.rows import dict_row
 
         with self._postgres_connection(row_factory=dict_row) as connection:
@@ -803,7 +809,7 @@ class ApplicationStore:
                 cursor.execute(query, params)
                 return cursor.fetchone()
 
-    def _query_all_postgres(self, query: str, params: tuple = ()) -> list[dict]:
+    def _query_all_postgres(self, query: str, params: tuple = ()) -> list[dict]:  # pragma: no cover
         from psycopg.rows import dict_row
 
         with self._postgres_connection(row_factory=dict_row) as connection:
@@ -811,7 +817,7 @@ class ApplicationStore:
                 cursor.execute(query, params)
                 return cursor.fetchall()
 
-    def _postgres_connection(self, **kwargs):
+    def _postgres_connection(self, **kwargs):  # pragma: no cover
         try:
             import psycopg
         except ImportError as exc:
@@ -841,7 +847,7 @@ class ApplicationStore:
             else:
                 try:
                     parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
-                except ValueError:
+                except ValueError:  # pragma: no cover — Python <3.11 fallback
                     parsed = datetime.strptime(text, "%Y-%m-%d %H:%M:%S")
 
         if parsed.tzinfo is None:
@@ -1056,6 +1062,18 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._write_json(200, {"application": application, "account": ACCOUNT_INFO})
             return
 
+        if parsed.path == "/api/party-dates":
+            stored = STORE.get_site_content_value("party_dates")
+            if stored:
+                try:
+                    dates = json.loads(stored)
+                except (json.JSONDecodeError, TypeError):
+                    dates = []
+            else:
+                dates = []
+            self._write_json(200, {"dates": dates})
+            return
+
         if parsed.path == "/":
             self.path = "/index.html"
 
@@ -1067,7 +1085,7 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
         if parsed.path == "/api/auth/login":
             try:
                 payload = self._read_payload()
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, ValueError):
                 self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
                 return
             token = str(payload.get("token", "")).strip()
@@ -1082,7 +1100,7 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return
             try:
                 payload = self._read_payload()
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, ValueError):
                 self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
                 return
             current_pw = str(payload.get("currentPassword", "")).strip()
@@ -1097,6 +1115,23 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._write_json(200, {"ok": True})
             return
 
+        if parsed.path == "/api/admin/party-dates":
+            if not self._require_admin():
+                return
+            try:
+                payload = self._read_payload()
+                dates = payload.get("dates", [])
+                if not isinstance(dates, list):
+                    self._write_json(400, {"error": "dates는 배열이어야 합니다."})
+                    return
+                STORE.upsert_site_content({"party_dates": json.dumps(dates, ensure_ascii=False)})
+                self._write_json(200, {"ok": True, "dates": dates})
+            except (json.JSONDecodeError, ValueError):
+                self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
+            except Exception as exc:
+                self._write_json(500, {"error": str(exc)})
+            return
+
         if parsed.path == "/api/capacity":
             if not self._require_admin():
                 return
@@ -1104,8 +1139,8 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
                 payload = self._read_payload()
                 day = payload.get("day")
                 cap = int(payload.get("capacity", 30))
-                if day not in ("금요일", "토요일", "일요일"):
-                    self._write_json(400, {"error": "Invalid day"})
+                if not day or not day.strip():
+                    self._write_json(400, {"error": "날짜를 입력해 주세요."})
                     return
                 result = STORE.set_capacity(day, cap)
                 self._write_json(200, {"capacity": result})
@@ -1188,7 +1223,7 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
             except ValidationError as exc:
                 self._write_json(400, {"error": str(exc)})
                 return
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, ValueError):
                 self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
                 return
 
@@ -1212,7 +1247,7 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
                     return
                 result = STORE.create_discount_code(code, discount_type, discount_value, max_uses)
                 self._write_json(201, {"discount_code": result})
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, ValueError):
                 self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
             except Exception as exc:
                 self._write_json(500, {"error": str(exc)})
@@ -1231,7 +1266,7 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
                     return
                 result = STORE.set_account_info({"bank": bank, "account_number": account_number, "holder": holder})
                 self._write_json(200, {"account": result})
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, ValueError):
                 self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
             except Exception as exc:
                 self._write_json(500, {"error": str(exc)})
@@ -1253,6 +1288,32 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._write_json(200, {"ok": True})
             return
 
+        if parsed.path == "/api/admin/applications/bulk-delete":
+            if not self._require_admin():
+                return
+            try:
+                payload = self._read_payload()
+                ids = payload.get("ids", [])
+                if not isinstance(ids, list) or len(ids) == 0:
+                    self._write_json(400, {"error": "삭제할 신청 ID 목록이 필요합니다."})
+                    return
+                if len(ids) > 500:
+                    self._write_json(400, {"error": "한 번에 최대 500개까지 삭제할 수 있습니다."})
+                    return
+                int_ids = []
+                for aid in ids:
+                    try:
+                        int_ids.append(int(aid))
+                    except (ValueError, TypeError):
+                        continue
+                deleted_count = STORE.bulk_delete_applications(int_ids)
+                self._write_json(200, {"ok": True, "deleted_count": deleted_count})
+            except (json.JSONDecodeError, ValueError):
+                self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
+            except Exception as exc:
+                self._write_json(500, {"error": str(exc)})
+            return
+
         if parsed.path != "/api/applications":
             self._write_json(404, {"error": "지원하지 않는 경로입니다."})
             return
@@ -1263,14 +1324,16 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
         except ValidationError as exc:
             self._write_json(400, {"error": str(exc)})
             return
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, ValueError):
             self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
             return
 
         discount_code = str(payload.get("discount", "") or payload.get("coupon", "") or "").strip()
         if discount_code:
             try:
-                STORE.increment_discount_usage(discount_code)
+                valid = STORE.validate_discount_code(discount_code)
+                if valid:
+                    STORE.increment_discount_usage(discount_code)
             except Exception:
                 pass
 
@@ -1300,7 +1363,7 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         try:
             payload = self._read_payload()
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, ValueError):
             self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
             return
 
@@ -1324,8 +1387,12 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Vary", "Origin")
         super().end_headers()
 
+    _MAX_PAYLOAD = 1_048_576  # 1 MB
+
     def _read_payload(self) -> dict:
         length = int(self.headers.get("Content-Length", "0") or 0)
+        if length > self._MAX_PAYLOAD:
+            raise ValueError("요청 본문이 너무 큽니다.")
         raw_body = self.rfile.read(length) if length > 0 else b""
         content_type = self.headers.get("Content-Type", "")
 
@@ -1353,7 +1420,7 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
         print(f"[{self.log_date_time_string()}] {format % args}")
 
 
-def main() -> None:
+def main() -> None:  # pragma: no cover
     handler = partial(PartyRequestHandler, directory=str(ROOT_DIR))
     httpd = http.server.ThreadingHTTPServer(("", PORT), handler)
 
@@ -1370,5 +1437,5 @@ def main() -> None:
     httpd.serve_forever()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

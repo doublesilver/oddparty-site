@@ -127,7 +127,7 @@
       <!-- 날짜 -->
       <div class="field-group">
         <span class="field-label">날짜 <span class="field-required">*</span></span>
-        <div class="radio-grid radio-grid-3" role="radiogroup" aria-required="true">
+        <div class="radio-grid radio-grid-3" id="date-radio-grid" role="radiogroup" aria-required="true">
           <label class="radio-card-label">
             <input class="radio-card-input" type="radio" name="date" value="금요일" />
             <span class="radio-card-name" id="date-label-금요일">금</span>
@@ -160,6 +160,7 @@
             placeholder="할인코드를 입력하세요" autocomplete="off" />
           <span class="discount-icon" aria-hidden="true">🎟</span>
         </div>
+        <span class="field-error" id="err-discount">유효하지 않은 할인코드입니다.</span>
       </div>
 
       <!-- 제출 -->
@@ -198,6 +199,7 @@
     </div>
   </main>
 
-  <script src="assets/js/form.js?v=2"></script>
+  <script src="assets/js/common.js?v=3"></script>
+  <script src="assets/js/form.js?v=3"></script>
 </body>
 </html>
