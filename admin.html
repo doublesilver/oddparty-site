@@ -1149,8 +1149,18 @@
           <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:var(--r-md);padding:12px 16px;margin-bottom:var(--sp-xl);font-size:var(--fs-xs);color:var(--muted);line-height:1.6;">
             <strong style="color:var(--text);">상태 변경 안내</strong><br/>
             • <strong>수동 설정</strong>: 상태 드롭다운에서 직접 변경한 값이 <strong>최우선</strong> 적용됩니다.<br/>
-            • <strong>자동 계산</strong>: 수동 설정이 없으면, 신청자 수 ÷ 정원 비율에 따라 자동으로 결정됩니다.<br/>
-            &nbsp;&nbsp;- 80% 미만 → 모집중 · 80% 이상 → 마감임박 · 100% 이상 또는 정원 0명 → 마감
+            • <strong>자동 계산</strong>: 수동 설정이 없으면, 신청자 수 ÷ 정원 비율에 따라 자동으로 결정됩니다.
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px;">
+              <label style="display:flex;align-items:center;gap:4px;color:var(--text);">
+                마감임박 기준:
+                <input type="number" id="threshold-urgent" min="1" max="99" value="80" style="width:60px;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:var(--fs-xs);text-align:center;" />%
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;color:var(--text);">
+                마감 기준:
+                <input type="number" id="threshold-closed" min="1" max="200" value="100" style="width:60px;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:var(--fs-xs);text-align:center;" />%
+              </label>
+              <button class="save-btn" type="button" onclick="saveThresholds()" style="padding:4px 12px;font-size:var(--fs-xs);">저장</button>
+            </div>
           </div>
 
           <!-- 파티 날짜 추가 -->
@@ -2043,6 +2053,8 @@
     ============================================================ */
     var _partyDates = []; /* [{date: "2026-03-14", label: "14일(토)", dayName: "토요일"}] */
     var _scarcityOverrides = {}; /* {"토요일": "모집중", "금요일": "마감"} */
+    var _thresholdUrgent = 80;
+    var _thresholdClosed = 100;
     var _defaultDays = ['금요일', '토요일', '일요일'];
 
     function _getDefaultPartyDates() {
@@ -2077,6 +2089,12 @@
         _partyDates = (results[1].dates || []);
         var siteContent = (results[2].content || {});
         try { _scarcityOverrides = JSON.parse(siteContent.scarcity_override || '{}'); } catch(e) { _scarcityOverrides = {}; }
+        if (siteContent.scarcity_threshold_urgent) _thresholdUrgent = parseInt(siteContent.scarcity_threshold_urgent, 10) || 80;
+        if (siteContent.scarcity_threshold_closed) _thresholdClosed = parseInt(siteContent.scarcity_threshold_closed, 10) || 100;
+        var urgentEl = document.getElementById('threshold-urgent');
+        var closedEl = document.getElementById('threshold-closed');
+        if (urgentEl) urgentEl.value = _thresholdUrgent;
+        if (closedEl) closedEl.value = _thresholdClosed;
         renderCapacity(scarcityData);
         renderPartyDatesList();
       }).catch(function() {
@@ -2149,6 +2167,26 @@
         _scarcityOverrides[dayName] = newStatus;
       }
       _saveScarcityOverrides(dayName, newStatus === '' ? '자동' : newStatus);
+    }
+
+    function saveThresholds() {
+      var urgent = parseInt(document.getElementById('threshold-urgent').value, 10);
+      var closed = parseInt(document.getElementById('threshold-closed').value, 10);
+      if (isNaN(urgent) || urgent < 1 || urgent > 99) { showToast('마감임박 기준은 1~99% 사이로 입력하세요.', true); return; }
+      if (isNaN(closed) || closed < urgent) { showToast('마감 기준은 마감임박 기준 이상이어야 합니다.', true); return; }
+      _thresholdUrgent = urgent;
+      _thresholdClosed = closed;
+      fetch(API_BASE + '/api/site-content', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ content: { scarcity_threshold_urgent: String(urgent), scarcity_threshold_closed: String(closed) } })
+      })
+      .then(function(r) {
+        if (!r.ok) throw new Error();
+        showToast('임계값이 저장되었습니다. (마감임박: ' + urgent + '%, 마감: ' + closed + '%)');
+        loadCapacity();
+      })
+      .catch(function() { showToast('저장 실패', true); });
     }
 
     function _saveScarcityOverrides(dayName, displayStatus) {

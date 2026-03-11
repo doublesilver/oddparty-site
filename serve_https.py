@@ -202,6 +202,15 @@ class ApplicationStore:
     def get_scarcity_info(self) -> dict:
         caps = self.get_capacity_settings()
         counts = self.get_date_counts()
+        # 임계값 로드 (관리자 설정)
+        try:
+            threshold_urgent = int(self.get_site_content_value("scarcity_threshold_urgent") or 80)
+        except (ValueError, TypeError):  # pragma: no cover
+            threshold_urgent = 80
+        try:
+            threshold_closed = int(self.get_site_content_value("scarcity_threshold_closed") or 100)
+        except (ValueError, TypeError):  # pragma: no cover
+            threshold_closed = 100
         # party_dates에서 dayName 목록을 가져와 기준으로 사용
         party_dates_raw = self.get_site_content_value("party_dates")
         day_names = set()
@@ -220,11 +229,10 @@ class ApplicationStore:
         for day in all_days:
             cap = caps.get(day, 30)
             count = counts.get(day, 0)
-            if cap == 0:
+            pct = (count / cap * 100) if cap > 0 else 0
+            if cap == 0 or pct >= threshold_closed:
                 level = "마감"
-            elif count >= cap:
-                level = "마감"
-            elif count / cap >= 0.8:
+            elif pct >= threshold_urgent:
                 level = "마감임박"
             else:
                 level = "모집중"

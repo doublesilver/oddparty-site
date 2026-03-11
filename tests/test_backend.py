@@ -522,6 +522,23 @@ class TestCapacityManagement(unittest.TestCase):
         info = self.store.get_scarcity_info()
         self.assertEqual(info["금요일"]["level"], "마감")
 
+    def test_get_scarcity_info_custom_thresholds(self):
+        """Custom thresholds from site content are used for level calculation."""
+        self.store.upsert_site_content({
+            "scarcity_threshold_urgent": "50",
+            "scarcity_threshold_closed": "90",
+        })
+        self.store.set_capacity("금요일", 10)
+        store = self.store
+        with patch.object(sut, "STORE", store):
+            for i in range(6):
+                store.create_application(_minimal_payload(
+                    name=f"사람{i}", phone=f"0101234567{i}", date="금요일"
+                ))
+        info = self.store.get_scarcity_info()
+        # 6/10 = 60% → above 50% (urgent) but below 90% (closed)
+        self.assertEqual(info["금요일"]["level"], "마감임박")
+
     def test_get_scarcity_info_uses_party_dates_daynames(self):
         """Scarcity uses party_dates dayNames as the base keys."""
         self.store.upsert_site_content({
