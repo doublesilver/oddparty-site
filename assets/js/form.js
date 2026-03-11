@@ -170,7 +170,7 @@ async function loadPartyDates() {
 
       var badgeSpan = document.createElement('span');
       badgeSpan.className = 'radio-card-badge available';
-      badgeSpan.id = 'scarcity-' + value;
+      badgeSpan.id = 'scarcity-' + (d.dayName || value);
       badgeSpan.textContent = '모집중';
       label.appendChild(badgeSpan);
 
@@ -184,7 +184,7 @@ async function loadPartyDates() {
 }
 
 /* Load all dynamic data, then reveal page */
-var _apiDone = Promise.all([loadScarcity(), loadSiteContentAndPricing(), loadAccountInfo(), loadPartyDates()]);
+var _apiDone = Promise.all([loadSiteContentAndPricing(), loadAccountInfo(), loadPartyDates()]).then(function() { return loadScarcity(); });
 var _timeout = new Promise(function(r) { setTimeout(r, 800); });
 Promise.race([_apiDone, _timeout]).then(revealPage);
 _apiDone.finally(revealPage);
