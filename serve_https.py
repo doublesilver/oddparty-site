@@ -675,8 +675,9 @@ class ApplicationStore:
 
         # 2부 참여 여부 처리
         part2pay = str(payload.get("part2pay") or "").strip() or None
-        PART2_BASE = int(PRICES.get("part2_base", 18000))
-        PART2_DISCOUNT = int(PRICES.get("part2_discount", 10))
+        # 지점별 2부 가격 (없으면 글로벌 → 기본값 순으로 폴백)
+        PART2_BASE = int(branch_prices.get("part2_base", PRICES.get("part2_base", 18000)))
+        PART2_DISCOUNT = int(branch_prices.get("part2_discount", PRICES.get("part2_discount", 10)))
 
         if part2pay == "prepay":
             price_amount = round((base_price + PART2_BASE) * (1 - PART2_DISCOUNT / 100))

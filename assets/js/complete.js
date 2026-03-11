@@ -27,13 +27,20 @@ function fmtGender(g) { return g === 'male' ? '남성' : g === 'female' ? '여�
       if (raw) {
         const pricing = typeof raw === 'string' ? JSON.parse(raw) : raw;
         const newPrices = {};
+        var globalP2Base = pricing.part2_base ? Number(pricing.part2_base) : 18000;
+        var globalP2Disc = pricing.part2_discount ? Number(pricing.part2_discount) : 10;
+        PART2_BASE = globalP2Base;
+        PART2_DISCOUNT = globalP2Disc;
         Object.keys(pricing).forEach(key => {
           if (key === 'part2_base' || key === 'part2_discount') return;
-          newPrices[key] = { male: Number(pricing[key].male), female: Number(pricing[key].female) };
+          const p = pricing[key];
+          newPrices[key] = {
+            male: Number(p.male), female: Number(p.female),
+            part2_base: p.part2_base != null ? Number(p.part2_base) : globalP2Base,
+            part2_discount: p.part2_discount != null ? Number(p.part2_discount) : globalP2Disc
+          };
         });
         if (Object.keys(newPrices).length > 0) PRICES = newPrices;
-        if (pricing.part2_base) PART2_BASE = Number(pricing.part2_base);
-        if (pricing.part2_discount) PART2_DISCOUNT = Number(pricing.part2_discount);
       }
     }
   } catch { /* use defaults */ }
@@ -49,7 +56,10 @@ if (data) {
   } else {
     const price = data.price || (PRICES[data.branch] && PRICES[data.branch][data.gender]) || 0;
     if (data.part2pay === 'prepay') {
-      displayPrice = Math.round((price + PART2_BASE) * (1 - PART2_DISCOUNT / 100));
+      const bp = PRICES[data.branch];
+      const p2b = bp && bp.part2_base != null ? bp.part2_base : PART2_BASE;
+      const p2d = bp && bp.part2_discount != null ? bp.part2_discount : PART2_DISCOUNT;
+      displayPrice = Math.round((price + p2b) * (1 - p2d / 100));
     } else {
       displayPrice = price;
     }

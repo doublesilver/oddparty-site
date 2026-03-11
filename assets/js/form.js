@@ -80,19 +80,23 @@ async function loadSiteContentAndPricing() {
     if (!raw) return;
     const pricing = typeof raw === 'string' ? JSON.parse(raw) : raw;
     const newPrices = {};
+    /* 글로벌 폴백값 */
+    var globalP2Base = pricing.part2_base ? Number(pricing.part2_base) : 18000;
+    var globalP2Disc = pricing.part2_discount ? Number(pricing.part2_discount) : 10;
+    PART2_BASE = globalP2Base;
+    PART2_DISCOUNT = globalP2Disc;
     Object.keys(pricing).forEach(key => {
       if (key === 'part2_base' || key === 'part2_discount') return;
-      newPrices[key] = { male: Number(pricing[key].male), female: Number(pricing[key].female), note: pricing[key].note || '' };
+      const p = pricing[key];
+      newPrices[key] = {
+        male: Number(p.male), female: Number(p.female), note: p.note || '',
+        part2_base: p.part2_base != null ? Number(p.part2_base) : globalP2Base,
+        part2_discount: p.part2_discount != null ? Number(p.part2_discount) : globalP2Disc
+      };
     });
     if (Object.keys(newPrices).length > 0) PRICES = newPrices;
-    if (pricing.part2_base) PART2_BASE = Number(pricing.part2_base);
-    if (pricing.part2_discount) PART2_DISCOUNT = Number(pricing.part2_discount);
 
     renderBranchCards();
-    const onsiteEl = document.getElementById('part2OnsitePrice');
-    if (onsiteEl) onsiteEl.textContent = '현장가 ' + fmtPrice(PART2_BASE);
-    const discountLabel = document.getElementById('part2DiscountLabel');
-    if (discountLabel) discountLabel.textContent = PART2_DISCOUNT + '% 할인';
     updateBranchPriceLabels();
     updatePart2PrepayPrice();
     updatePrice();
@@ -304,6 +308,18 @@ function initRadioCards(groupName) {
 ['gender', 'branch', 'date', 'part2pay'].forEach(initRadioCards);
 
 /* =============================================
+   GET BRANCH-SPECIFIC PART2 VALUES
+   ============================================= */
+function getBranchPart2() {
+  const branch = document.querySelector('input[name="branch"]:checked')?.value;
+  const bp = branch && PRICES[branch];
+  return {
+    base: bp && bp.part2_base != null ? bp.part2_base : PART2_BASE,
+    discount: bp && bp.part2_discount != null ? bp.part2_discount : PART2_DISCOUNT
+  };
+}
+
+/* =============================================
    UPDATE BRANCH PRICE LABELS
    ============================================= */
 function updateBranchPriceLabels() {
@@ -347,12 +363,13 @@ function updatePrice() {
   if (gender && branch) {
     const price1 = PRICES[branch][gender];
     const branchEsc = esc(branch);
+    const p2 = getBranchPart2();
     if (joinPart2) {
       if (part2pay === 'prepay') {
-        const total = Math.round((price1 + PART2_BASE) * (1 - PART2_DISCOUNT / 100));
-        text.innerHTML = `<strong>${branchEsc}점 1+2부 선결제</strong> · <span class="dynamic-price">${fmtPrice(total)}</span> <small style="color:var(--muted)">(${PART2_DISCOUNT}% 할인)</small>`;
+        const total = Math.round((price1 + p2.base) * (1 - p2.discount / 100));
+        text.innerHTML = `<strong>${branchEsc}점 1+2부 선결제</strong> · <span class="dynamic-price">${fmtPrice(total)}</span> <small style="color:var(--muted)">(${p2.discount}% 할인)</small>`;
       } else {
-        text.innerHTML = `<strong>${branchEsc}점 1부</strong> · <span class="dynamic-price">${fmtPrice(price1)}</span> + 2부 현장 ${fmtPrice(PART2_BASE)}`;
+        text.innerHTML = `<strong>${branchEsc}점 1부</strong> · <span class="dynamic-price">${fmtPrice(price1)}</span> + 2부 현장 ${fmtPrice(p2.base)}`;
       }
     } else {
       text.innerHTML = `<strong>${branchEsc}점</strong> · <span class="dynamic-price">${fmtPrice(price1)}</span>`;
@@ -383,7 +400,8 @@ function updatePart2PrepayPrice() {
   const priceEl = document.getElementById('part2PrepayPrice');
   if (!priceEl) return;
   if (price1 > 0) {
-    const prepayTotal = Math.round((price1 + PART2_BASE) * (1 - PART2_DISCOUNT / 100));
+    const p2 = getBranchPart2();
+    const prepayTotal = Math.round((price1 + p2.base) * (1 - p2.discount / 100));
     priceEl.textContent = fmtPrice(prepayTotal);
   } else {
     priceEl.textContent = '성별·지점 선택 후';
@@ -480,12 +498,13 @@ document.getElementById('party-form').addEventListener('submit', async (e) => {
   let totalPrice = price1;
   let part2Amount = null;
 
+  const p2 = getBranchPart2();
   if (joinPart2) {
     if (part2pay === 'prepay') {
-      totalPrice = Math.round((price1 + PART2_BASE) * (1 - PART2_DISCOUNT / 100));
+      totalPrice = Math.round((price1 + p2.base) * (1 - p2.discount / 100));
       part2Amount = totalPrice - price1;
     } else {
-      part2Amount = PART2_BASE;
+      part2Amount = p2.base;
     }
   }
 

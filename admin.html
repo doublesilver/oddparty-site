@@ -1207,24 +1207,6 @@
           <h2 class="admin-section-title">가격 설정</h2>
           <p style="color:var(--muted);font-size:var(--fs-sm);margin-bottom:var(--sp-lg);">지점별 참가비와 2부 옵션을 설정합니다. 변경 시 신청 페이지에 즉시 반영됩니다.</p>
 
-          <!-- 가격 설정은 지점 관리에서 설정한 지점 기반으로 미리보기 표시 -->
-          <div class="content-group">
-            <p class="content-group-title">2부 참여</p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-              <div>
-                <label class="content-label">2부 기본가 (원)</label>
-                <input class="settings-input" type="number" id="price-part2-base" value="18000" style="width:100%;" />
-              </div>
-              <div>
-                <label class="content-label">선결제 할인율 (%)</label>
-                <input class="settings-input" type="number" id="price-part2-discount" value="10" min="0" max="50" style="width:100%;" />
-              </div>
-            </div>
-            <p style="color:var(--muted);font-size:var(--fs-xs);margin-top:4px;">
-              예시) 건대 남성 1+2부 선결제: (33,000 + 18,000) × 0.9 = <strong>45,900원</strong>
-            </p>
-          </div>
-
           <!-- 가격 계산 미리보기 -->
           <div class="price-preview" id="price-preview">
             <p class="price-preview-title">가격 조합 미리보기</p>
@@ -2443,13 +2425,19 @@
             '<p class="content-group-title" style="margin:0;">' + b.name + '점</p>' +
             '<button type="button" onclick="removeBranch(' + i + ')" style="font-size:11px;padding:2px 8px;background:transparent;color:#e74c3c;border:1px solid #e74c3c;border-radius:4px;cursor:pointer;">삭제</button>' +
           '</div>' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:8px;">' +
             '<div><label class="content-label">남성 참가비 (원)</label>' +
               '<input class="settings-input branch-price-input" type="number" data-branch="' + i + '" data-field="male" value="' + (b.male || 0) + '" style="width:100%;" /></div>' +
             '<div><label class="content-label">여성 참가비 (원)</label>' +
               '<input class="settings-input branch-price-input" type="number" data-branch="' + i + '" data-field="female" value="' + (b.female || 0) + '" style="width:100%;" /></div>' +
             '<div><label class="content-label">비고</label>' +
               '<input class="settings-input branch-price-input" type="text" data-branch="' + i + '" data-field="note" value="' + (b.note || '') + '" style="width:100%;" placeholder="예: 포틀럭 포함" /></div>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px;">' +
+            '<div><label class="content-label">2부 기본가 (원)</label>' +
+              '<input class="settings-input branch-price-input" type="number" data-branch="' + i + '" data-field="part2_base" value="' + (b.part2_base != null ? b.part2_base : 18000) + '" style="width:100%;" /></div>' +
+            '<div><label class="content-label">2부 선결제 할인율 (%)</label>' +
+              '<input class="settings-input branch-price-input" type="number" data-branch="' + i + '" data-field="part2_discount" value="' + (b.part2_discount != null ? b.part2_discount : 10) + '" min="0" max="50" style="width:100%;" /></div>' +
           '</div>' +
         '</div>';
       }).join('');
@@ -2461,13 +2449,14 @@
           if (field === 'note') _branches[idx].note = inp.value;
           else _branches[idx][field] = parseInt(inp.value) || 0;
           updatePricePreview();
+          updatePricePreview();
         });
       });
       updatePricePreview();
     }
 
     function addBranch(name, male, female, note) {
-      _branches.push({ name: name || '', male: male || 0, female: female || 0, note: note || '' });
+      _branches.push({ name: name || '', male: male || 0, female: female || 0, note: note || '', part2_base: 18000, part2_discount: 10 });
       renderBranchList();
     }
 
@@ -2498,17 +2487,21 @@
           Object.keys(p).forEach(function(key) {
             if (key === 'part2_base' || key === 'part2_discount') return;
             var b = p[key];
-            _branches.push({ name: key, male: b.male || 0, female: b.female || 0, note: b.note || '' });
+            var globalP2Base = p.part2_base != null ? p.part2_base : 18000;
+            var globalP2Disc = p.part2_discount != null ? p.part2_discount : 10;
+            _branches.push({
+              name: key, male: b.male || 0, female: b.female || 0, note: b.note || '',
+              part2_base: b.part2_base != null ? b.part2_base : globalP2Base,
+              part2_discount: b.part2_discount != null ? b.part2_discount : globalP2Disc
+            });
           });
           if (_branches.length === 0) {
             _branches = [
-              { name: '건대', male: 33000, female: 23000, note: '포틀럭 포함' },
-              { name: '영등포', male: 39500, female: 29500, note: '안주 포함' }
+              { name: '건대', male: 33000, female: 23000, note: '포틀럭 포함', part2_base: 18000, part2_discount: 10 },
+              { name: '영등포', male: 39500, female: 29500, note: '안주 포함', part2_base: 18000, part2_discount: 10 }
             ];
           }
           renderBranchList();
-          if (p.part2_base != null) document.getElementById('price-part2-base').value = p.part2_base;
-          if (p.part2_discount != null) document.getElementById('price-part2-discount').value = p.part2_discount;
           updatePricePreview();
         })
         .catch(function() {});
@@ -2517,10 +2510,12 @@
     function savePricing() {
       var pricing = {};
       _branches.forEach(function(b) {
-        pricing[b.name] = { male: b.male, female: b.female, note: b.note || '' };
+        pricing[b.name] = {
+          male: b.male, female: b.female, note: b.note || '',
+          part2_base: b.part2_base != null ? b.part2_base : 18000,
+          part2_discount: b.part2_discount != null ? b.part2_discount : 10
+        };
       });
-      pricing.part2_base = parseInt(document.getElementById('price-part2-base').value) || 0;
-      pricing.part2_discount = parseInt(document.getElementById('price-part2-discount').value) || 0;
       fetch(API_BASE + '/api/pricing', {
         method: 'POST',
         headers: authHeaders(),
@@ -3336,26 +3331,21 @@
        PRICE PREVIEW
     ============================================================ */
     function updatePricePreview() {
-      var base = parseInt(document.getElementById('price-part2-base').value) || 0;
-      var disc = parseInt(document.getElementById('price-part2-discount').value) || 0;
-      var rate = 1 - disc / 100;
       var items = [];
       _branches.forEach(function(b) {
+        var p2base = b.part2_base != null ? b.part2_base : 18000;
+        var p2disc = b.part2_discount != null ? b.part2_discount : 10;
+        var rate = 1 - p2disc / 100;
         items.push({ label: b.name + ' 남 1부', val: b.male });
         items.push({ label: b.name + ' 여 1부', val: b.female });
-        items.push({ label: b.name + ' 남 1+2부 선결제', val: Math.round((b.male + base) * rate) });
-        items.push({ label: b.name + ' 여 1+2부 선결제', val: Math.round((b.female + base) * rate) });
+        items.push({ label: b.name + ' 남 1+2부 선결제 (' + p2disc + '%↓)', val: Math.round((b.male + p2base) * rate) });
+        items.push({ label: b.name + ' 여 1+2부 선결제 (' + p2disc + '%↓)', val: Math.round((b.female + p2base) * rate) });
       });
       document.getElementById('price-preview-grid').innerHTML = items.map(function(it) {
         return '<div class="price-preview-item"><span class="price-preview-label">' + it.label +
           '</span><span class="price-preview-val">' + it.val.toLocaleString() + '원</span></div>';
       }).join('');
     }
-
-    // Bind part2 inputs for live preview
-    ['price-part2-base','price-part2-discount'].forEach(function(id) {
-      document.getElementById(id).addEventListener('input', updatePricePreview);
-    });
 
     /* ============================================================
        MOBILE BOTTOM NAV + MORE MENU

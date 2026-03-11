@@ -360,7 +360,7 @@ class TestNormalizePayload(unittest.TestCase):
         self.assertIn("할인 적용", result["price_text"])
 
     def test_part2_prepay_custom_part2_pricing(self):
-        """Custom part2_base and part2_discount from admin settings."""
+        """Custom part2_base and part2_discount from admin settings (global)."""
         custom_pricing = {
             "건대": {"male": 33000, "female": 23000},
             "part2_base": 20000,
@@ -370,6 +370,22 @@ class TestNormalizePayload(unittest.TestCase):
         # (33000 + 20000) * 0.8 = 42400
         result = self._normalize({**_minimal_payload(branch="건대", gender="male"), "part2pay": "prepay"})
         self.assertEqual(result["price_amount"], 42400)
+
+    def test_part2_prepay_branch_specific_pricing(self):
+        """Branch-specific part2 values override global ones."""
+        custom_pricing = {
+            "건대": {"male": 33000, "female": 23000, "part2_base": 15000, "part2_discount": 5},
+            "영등포": {"male": 39500, "female": 29500, "part2_base": 25000, "part2_discount": 15},
+            "part2_base": 18000,
+            "part2_discount": 10,
+        }
+        self.store.upsert_site_content({"pricing": json.dumps(custom_pricing)})
+        # 건대: (33000 + 15000) * 0.95 = 45600
+        result1 = self._normalize({**_minimal_payload(branch="건대", gender="male"), "part2pay": "prepay"})
+        self.assertEqual(result1["price_amount"], 45600)
+        # 영등포: (39500 + 25000) * 0.85 = 54825
+        result2 = self._normalize({**_minimal_payload(branch="영등포", gender="male"), "part2pay": "prepay"})
+        self.assertEqual(result2["price_amount"], 54825)
 
 
 class TestApplicationStoreCRUD(unittest.TestCase):
