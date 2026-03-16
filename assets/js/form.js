@@ -9,13 +9,9 @@
   var now = new Date();
   var day = now.getDay(); // 0=Sun .. 5=Fri 6=Sat
   var daysUntilFri = (5 - day + 7) % 7;
-  // 월요일 오전 7시 이후 다음 주로 전환
-  var isMonday = day === 1;
-  var pastCutoff = isMonday && now.getHours() >= 7;
-  if (daysUntilFri === 0 && pastCutoff) daysUntilFri = 7;
-  if (isMonday && !pastCutoff) daysUntilFri = -3;
-  if (day === 0) daysUntilFri = -2;
+  // 일요일 19시 이후 다음 주로 전환
   if (day === 6) daysUntilFri = -1;
+  if (day === 0 && now.getHours() < 19) daysUntilFri = -2;
   var fri = new Date(now); fri.setDate(now.getDate() + daysUntilFri);
   var sat = new Date(fri); sat.setDate(fri.getDate() + 1);
   var sun = new Date(fri); sun.setDate(fri.getDate() + 2);
