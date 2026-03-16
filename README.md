@@ -54,7 +54,7 @@ ODD PARTY는 소셜 파티 참가 신청부터 관리까지 한 곳에서 처리
 | Layer | Technology | Note |
 |-------|-----------|------|
 | **Frontend** | HTML5, CSS3, Vanilla JS | 프레임워크 미사용, 순수 구현 |
-| **Backend** | Python `http.server` | 단일 파일 (888 stmts), 외부 프레임워크 없음 |
+| **Backend** | Python `http.server` | 단일 파일 (984 stmts), 외부 프레임워크 없음 |
 | **Database** | SQLite / PostgreSQL | 환경변수(`DATABASE_URL`)로 자동 전환 |
 | **Auth** | JWT (HMAC-SHA256) | Python `hmac` + `hashlib` 직접 구현 |
 | **Hosting** | Vercel (FE) + Railway (BE) | 자동 배포 (Git push → deploy) |
@@ -140,7 +140,7 @@ oddparty-site/
 ├── form.html               # 신청 폼 페이지
 ├── complete.html           # 신청 완료 페이지
 ├── admin.html              # 관리자 대시보드
-├── serve_https.py          # 백엔드 서버 (단일 파일, 888 stmts)
+├── serve_https.py          # 백엔드 서버 (단일 파일, 984 stmts)
 ├── assets/
 │   ├── css/styles.css      # 전역 스타일시트
 │   ├── js/
@@ -167,9 +167,9 @@ $ python3 -m pytest tests/ -q --cov=serve_https
 
 Name             Stmts   Miss  Cover
 ----------------------------------------------
-serve_https.py     888      0   100%
+serve_https.py     984      0   100%
 ----------------------------------------------
-TOTAL              888      0   100%
+TOTAL              984      0   100%
 ```
 
 ---

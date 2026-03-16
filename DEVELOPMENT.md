@@ -29,7 +29,7 @@ oddparty-site/
 ├── form.html               # 신청 폼 페이지 (고객용)
 ├── complete.html           # 신청 완료 페이지 (고객용)
 ├── admin.html              # 관리자 대시보드 (인라인 JS 3400+줄)
-├── serve_https.py          # 백엔드 서버 전체 (단일 파일, 888 stmts)
+├── serve_https.py          # 백엔드 서버 전체 (단일 파일, 984 stmts)
 ├── assets/
 │   ├── css/styles.css      # 전역 스타일시트
 │   └── js/
@@ -86,7 +86,7 @@ python3 -m pytest tests/test_backend.py -q --cov=serve_https --cov-report=term-m
 python3 -m pytest tests/test_backend.py -k "test_함수명" -v
 ```
 
-**현재 기준**: 296 tests, 100% coverage (888/888 stmts)
+**현재 기준**: 296 tests, 100% coverage (984/984 stmts)
 
 ---
 
