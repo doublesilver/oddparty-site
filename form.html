@@ -1,205 +1,429 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>파티 초대 신청 — ODD PARTY</title>
-  <link rel="icon" type="image/png" href="assets/images/favicon.png" />
-  <meta name="theme-color" content="#0d0a18" />
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
-  <link rel="stylesheet" href="assets/css/styles.css" />
-  <style>.dynamic-load{opacity:0;transition:opacity .2s}.dynamic-load.loaded{opacity:1}</style>
-</head>
-<body>
-
-  <!-- =================== MAIN =================== -->
-  <main class="page-wrap dynamic-load">
-
-    <!-- 폼 타이틀 -->
-    <div class="form-header">
-      <h1 class="form-title" id="form-title">파티 <span>초대 신청</span></h1>
-      <p class="form-subtitle" id="form-subtitle">신청서를 검토 후 확정 안내를 드립니다.</p>
-    </div>
-
-    <!-- 입금 안내 컴팩트 카드 -->
-    <div class="payment-card dynamic-load" role="region" aria-label="입금 계좌 안내">
-      <div class="payment-left">
-        <p class="payment-label">입금 계좌</p>
-        <p class="payment-bank" id="form-bank-name">농협은행</p>
-        <p class="payment-account" id="account-number">351-0948-4473-43</p>
-        <p class="payment-holder" id="form-account-holder">예금주: 이@봄</p>
-      </div>
-      <button class="copy-btn" type="button" id="copy-account-btn" aria-label="계좌번호 복사">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-          <rect x="9" y="9" width="13" height="13" rx="2"/>
-          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-        </svg>
-        복사
-      </button>
-    </div>
-
-    <!-- FORM -->
-    <form class="form-body" id="party-form" novalidate>
-
-      <!-- 이름 -->
-      <div class="field-group">
-        <label class="field-label" for="field-name">
-          이름 <span class="field-required">*</span>
-        </label>
-        <input class="text-input" type="text" id="field-name" name="name"
-          placeholder="" required autocomplete="name" inputmode="text" />
-        <span class="field-error" id="err-name">이름을 입력해 주세요.</span>
-      </div>
-
-      <!-- 나이 + 연락처 -->
-      <div class="text-input-row">
-        <div class="field-group" style="flex:1">
-          <label class="field-label" for="field-age">
-            나이 <span class="field-required">*</span>
-          </label>
-          <input class="text-input" type="text" id="field-age" name="age"
-            placeholder="20~37" maxlength="2" required inputmode="numeric" pattern="[0-9]*" />
-          <span class="field-error" id="err-age">만 20~37세만 신청 가능합니다.</span>
-        </div>
-        <div class="field-group" style="flex:2">
-          <label class="field-label" for="field-phone">
-            연락처 <span class="field-required">*</span>
-          </label>
-          <input class="text-input" type="tel" id="field-phone" name="phone"
-            placeholder="010-0000-0000" required autocomplete="tel" inputmode="tel" />
-          <span class="field-error" id="err-phone">연락처를 입력해 주세요.</span>
-        </div>
-      </div>
-
-      <!-- 성별 -->
-      <div class="field-group">
-        <span class="field-label">성별 <span class="field-required">*</span></span>
-        <div class="radio-grid radio-grid-2" role="radiogroup" aria-required="true">
-          <label class="radio-card-label" id="gender-m-label">
-            <input class="radio-card-input" type="radio" name="gender" value="male" id="gender-male" required />
-            <span class="radio-card-name">남성</span>
-          </label>
-          <label class="radio-card-label" id="gender-f-label">
-            <input class="radio-card-input" type="radio" name="gender" value="female" id="gender-female" />
-            <span class="radio-card-name">여성</span>
-          </label>
-        </div>
-        <!-- 동적 가격 표시 -->
-        <div class="gender-price-box" id="price-box" style="display:none">
-          <span id="price-box-text" style="color:var(--muted);font-size:var(--fs-xs);">지점을 선택하면 가격이 표시됩니다.</span>
-        </div>
-        <span class="field-error" id="err-gender">성별을 선택해 주세요.</span>
-      </div>
-
-      <!-- 지점 -->
-      <div class="field-group">
-        <span class="field-label">지점 <span class="field-required">*</span></span>
-        <div class="radio-grid" id="branch-radio-grid" role="radiogroup" aria-required="true">
-          <!-- 지점 카드가 JS로 동적 생성됩니다 -->
-        </div>
-        <span class="field-error" id="err-branch">지점을 선택해 주세요.</span>
-      </div>
-
-      <!-- 2부 참여 옵션 -->
-      <div class="field-group part2-options" id="part2Options" style="display:none">
-        <label class="part2-check-label">
-          <input type="checkbox" id="joinPart2" />
-          <span class="part2-check-text">🎉 2부도 참여할래요!</span>
-        </label>
-        <div class="part2-methods" id="part2Methods" style="display:none">
-          <div class="radio-grid radio-grid-2">
-            <label class="radio-card-label" id="part2-prepay-label">
-              <input class="radio-card-input" type="radio" name="part2pay" value="prepay" checked />
-              <span class="radio-card-name">선결제</span>
-              <span class="radio-card-sub" id="part2DiscountLabel">10% 할인</span>
-              <span class="radio-card-price" id="part2PrepayPrice">—</span>
-            </label>
-            <label class="radio-card-label" id="part2-onsite-label">
-              <input class="radio-card-input" type="radio" name="part2pay" value="onsite" />
-              <span class="radio-card-name">현장결제</span>
-              <span class="radio-card-sub" id="part2OnsitePrice">현장가 18,000원</span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <!-- 날짜 -->
-      <div class="field-group">
-        <span class="field-label">날짜 <span class="field-required">*</span></span>
-        <div class="radio-grid radio-grid-3" id="date-radio-grid" role="radiogroup" aria-required="true">
-          <label class="radio-card-label">
-            <input class="radio-card-input" type="radio" name="date" value="금요일" />
-            <span class="radio-card-name" id="date-label-금요일">금</span>
-            <span class="radio-card-sub" id="date-sub-금요일">Friday</span>
-            <span class="radio-card-badge scarcity" id="scarcity-금요일"></span>
-          </label>
-          <label class="radio-card-label">
-            <input class="radio-card-input" type="radio" name="date" value="토요일" />
-            <span class="radio-card-name" id="date-label-토요일">토</span>
-            <span class="radio-card-sub" id="date-sub-토요일">Saturday</span>
-            <span class="radio-card-badge scarcity" id="scarcity-토요일"></span>
-          </label>
-          <label class="radio-card-label">
-            <input class="radio-card-input" type="radio" name="date" value="일요일" />
-            <span class="radio-card-name" id="date-label-일요일">일</span>
-            <span class="radio-card-sub" id="date-sub-일요일">Sunday</span>
-            <span class="radio-card-badge scarcity" id="scarcity-일요일"></span>
-          </label>
-        </div>
-        <span class="field-error" id="err-date">날짜를 선택해 주세요.</span>
-      </div>
-
-      <!-- 할인코드 (선택) -->
-      <div class="field-group">
-        <label class="field-label" for="field-discount">
-          할인코드 <span class="field-optional">(선택)</span>
-        </label>
-        <div class="discount-wrap">
-          <input class="text-input" type="text" id="field-discount" name="discount"
-            placeholder="할인코드를 입력하세요" autocomplete="off" />
-          <span class="discount-icon" aria-hidden="true">🎟</span>
-        </div>
-        <span class="field-error" id="err-discount">유효하지 않은 할인코드입니다.</span>
-      </div>
-
-      <!-- 제출 -->
-      <div class="submit-section">
-        <button class="submit-btn" type="submit" id="submit-btn">
-          <span class="btn-text">신청하기 🎉</span>
-          <span class="spinner" aria-hidden="true"></span>
-        </button>
-        <p class="submit-note dynamic-load" id="form-submit-note">
-          접수 후 입금 완료 시 신청이 확정됩니다.<br/>
-          계좌: <span id="form-submit-note-bank">농협</span> <span id="form-submit-note-account">351-0948-4473-43</span> (<span id="form-submit-note-holder">이@봄</span>)
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>파티 초대 신청 — ODD PARTY</title>
+    <link rel="icon" type="image/png" href="assets/images/favicon.png" />
+    <meta name="theme-color" content="#0d0a18" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <style>
+      .dynamic-load {
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .dynamic-load.loaded {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- =================== MAIN =================== -->
+    <main class="page-wrap dynamic-load">
+      <!-- 폼 타이틀 -->
+      <div class="form-header">
+        <h1 class="form-title" id="form-title">파티 <span>초대 신청</span></h1>
+        <p class="form-subtitle" id="form-subtitle">
+          신청서를 검토 후 확정 안내를 드립니다.
         </p>
       </div>
 
-    </form>
+      <!-- 입금 안내 컴팩트 카드 -->
+      <div
+        class="payment-card dynamic-load"
+        role="region"
+        aria-label="입금 계좌 안내"
+      >
+        <div class="payment-left">
+          <p class="payment-label">입금 계좌</p>
+          <p class="payment-bank" id="form-bank-name">농협은행</p>
+          <p class="payment-account" id="account-number">351-0948-4473-43</p>
+          <p class="payment-holder" id="form-account-holder">예금주: 이@봄</p>
+        </div>
+        <button
+          class="copy-btn"
+          type="button"
+          id="copy-account-btn"
+          aria-label="계좌번호 복사"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            aria-hidden="true"
+          >
+            <rect x="9" y="9" width="13" height="13" rx="2" />
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+          </svg>
+          복사
+        </button>
+      </div>
 
-    <!-- 파티 규칙 -->
-    <div class="party-rules">
-      <p class="party-rules-title" id="form-rules-title">ODD PARTY 참여 규칙</p>
-      <ol class="party-rules-list" id="form-rules-list">
-        <li>노쇼(No-show) 시 향후 파티 참여가 제한됩니다.</li>
-        <li>다른 참가자에게 불쾌감을 주는 행동은 퇴장 조치될 수 있습니다.</li>
-        <li>과도한 음주는 삼가주세요. 즐거운 파티를 위한 매너를 지켜주세요.</li>
-        <li>파티 중 촬영이 진행될 수 있으며, 참여 시 초상권 사용에 동의하는 것으로 간주됩니다.</li>
-      </ol>
-    </div>
+      <!-- FORM -->
+      <form class="form-body" id="party-form" novalidate>
+        <!-- 이름 -->
+        <div class="field-group">
+          <label class="field-label" for="field-name">
+            이름 <span class="field-required">*</span>
+          </label>
+          <input
+            class="text-input"
+            type="text"
+            id="field-name"
+            name="name"
+            placeholder=""
+            required
+            autocomplete="name"
+            inputmode="text"
+          />
+          <span class="field-error" id="err-name">이름을 입력해 주세요.</span>
+        </div>
 
-    <!-- 환불 규정 및 안내 -->
-    <div class="refund-policy">
-      <p class="refund-title" id="form-refund-title">참가비 환불 규정</p>
-      <ul class="refund-list" id="form-refund-list">
-        <li>파티 4일 전까지 취소: 전액 환불</li>
-        <li>파티 3일 전~당일 취소: 환불 불가</li>
-      </ul>
-      <p class="refund-notice" id="form-refund-notice">* 파티내에서는 촬영이 있을 수 있습니다. 파티 참여는 초상권 동의에 해당합니다. (추후 영상은 얼굴 식별이 불가한 수준으로 모자이크 처리하니 안심하세요!)</p>
-    </div>
-  </main>
+        <!-- 나이 + 연락처 -->
+        <div class="text-input-row">
+          <div class="field-group" style="flex: 1">
+            <label class="field-label" for="field-age">
+              나이 <span class="field-required">*</span>
+            </label>
+            <input
+              class="text-input"
+              type="text"
+              id="field-age"
+              name="age"
+              placeholder="20~37"
+              maxlength="2"
+              required
+              inputmode="numeric"
+              pattern="[0-9]*"
+            />
+            <span class="field-error" id="err-age"
+              >만 20~37세만 신청 가능합니다.</span
+            >
+          </div>
+          <div class="field-group" style="flex: 2">
+            <label class="field-label" for="field-phone">
+              연락처 <span class="field-required">*</span>
+            </label>
+            <input
+              class="text-input"
+              type="tel"
+              id="field-phone"
+              name="phone"
+              placeholder="010-0000-0000"
+              required
+              autocomplete="tel"
+              inputmode="tel"
+            />
+            <span class="field-error" id="err-phone"
+              >연락처를 입력해 주세요.</span
+            >
+          </div>
+        </div>
 
-  <script src="assets/js/common.js?v=3"></script>
-  <script src="assets/js/form.js?v=3"></script>
-</body>
+        <!-- 성별 -->
+        <div class="field-group">
+          <span class="field-label"
+            >성별 <span class="field-required">*</span></span
+          >
+          <div
+            class="radio-grid radio-grid-2"
+            role="radiogroup"
+            aria-required="true"
+          >
+            <label class="radio-card-label" id="gender-m-label">
+              <input
+                class="radio-card-input"
+                type="radio"
+                name="gender"
+                value="male"
+                id="gender-male"
+                required
+              />
+              <span class="radio-card-name">남성</span>
+            </label>
+            <label class="radio-card-label" id="gender-f-label">
+              <input
+                class="radio-card-input"
+                type="radio"
+                name="gender"
+                value="female"
+                id="gender-female"
+              />
+              <span class="radio-card-name">여성</span>
+            </label>
+          </div>
+          <!-- 동적 가격 표시 -->
+          <div class="gender-price-box" id="price-box" style="display: none">
+            <span
+              id="price-box-text"
+              style="color: var(--muted); font-size: var(--fs-xs)"
+              >지점을 선택하면 가격이 표시됩니다.</span
+            >
+          </div>
+          <span class="field-error" id="err-gender">성별을 선택해 주세요.</span>
+        </div>
+
+        <!-- 지점 -->
+        <div class="field-group">
+          <span class="field-label"
+            >지점 <span class="field-required">*</span></span
+          >
+          <div
+            class="radio-grid"
+            id="branch-radio-grid"
+            role="radiogroup"
+            aria-required="true"
+          >
+            <!-- 지점 카드가 JS로 동적 생성됩니다 -->
+          </div>
+          <span class="field-error" id="err-branch">지점을 선택해 주세요.</span>
+        </div>
+
+        <!-- 2부 참여 옵션 -->
+        <div
+          class="field-group part2-options"
+          id="part2Options"
+          style="display: none"
+        >
+          <label class="part2-check-label">
+            <input type="checkbox" id="joinPart2" />
+            <span class="part2-check-text">🎉 2부도 참여할래요!</span>
+          </label>
+          <div class="part2-methods" id="part2Methods" style="display: none">
+            <div class="radio-grid radio-grid-2">
+              <label class="radio-card-label" id="part2-prepay-label">
+                <input
+                  class="radio-card-input"
+                  type="radio"
+                  name="part2pay"
+                  value="prepay"
+                  checked
+                />
+                <span class="radio-card-name">선결제</span>
+                <span class="radio-card-sub" id="part2DiscountLabel"
+                  >10% 할인</span
+                >
+                <span class="radio-card-price" id="part2PrepayPrice">—</span>
+              </label>
+              <label class="radio-card-label" id="part2-onsite-label">
+                <input
+                  class="radio-card-input"
+                  type="radio"
+                  name="part2pay"
+                  value="onsite"
+                />
+                <span class="radio-card-name">현장결제</span>
+                <span class="radio-card-sub" id="part2OnsitePrice"
+                  >현장가 18,000원</span
+                >
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 날짜 -->
+        <div class="field-group">
+          <span class="field-label"
+            >날짜 <span class="field-required">*</span></span
+          >
+          <div class="calendar-wrap">
+            <div class="calendar-header">
+              <button type="button" class="cal-nav" id="cal-prev">◄</button>
+              <span class="cal-month-label" id="cal-month-label"></span>
+              <button type="button" class="cal-nav" id="cal-next">►</button>
+            </div>
+            <div class="cal-day-headers">
+              <div class="cal-day-header sun">일</div>
+              <div class="cal-day-header">월</div>
+              <div class="cal-day-header">화</div>
+              <div class="cal-day-header">수</div>
+              <div class="cal-day-header">목</div>
+              <div class="cal-day-header">금</div>
+              <div class="cal-day-header sat">토</div>
+            </div>
+            <div class="cal-date-grid" id="cal-date-grid"></div>
+            <div class="cal-selected-info" id="cal-selected-info"></div>
+            <p class="cal-hint">☝ 참여를 원하시는 날짜를 선택해주세요.</p>
+          </div>
+          <input type="hidden" id="cal-selected-date" name="date" />
+          <span class="field-error" id="err-date">날짜를 선택해 주세요.</span>
+        </div>
+
+        <!-- 할인코드 (선택) -->
+        <div class="field-group">
+          <label class="field-label" for="field-discount">
+            할인코드 <span class="field-optional">(선택)</span>
+          </label>
+          <div class="discount-wrap">
+            <input
+              class="text-input"
+              type="text"
+              id="field-discount"
+              name="discount"
+              placeholder="할인코드를 입력하세요"
+              autocomplete="off"
+            />
+            <span class="discount-icon" aria-hidden="true">🎟</span>
+          </div>
+          <span class="field-error" id="err-discount"
+            >유효하지 않은 할인코드입니다.</span
+          >
+        </div>
+
+        <!-- 이용약관 동의 -->
+        <div class="field-group">
+          <div class="terms-group">
+            <p class="terms-title">파티 이용 약관에 동의해주세요.</p>
+            <div class="terms-all-wrap">
+              <label class="terms-check-row">
+                <input type="checkbox" id="agree-all" />
+                <span>전체 동의</span>
+              </label>
+            </div>
+            <div class="terms-item">
+              <div class="terms-item-row">
+                <label class="terms-check-row">
+                  <input type="checkbox" id="agree-rules" />
+                  <span>(필수) 파티 이용 규정 동의</span>
+                </label>
+                <button
+                  type="button"
+                  class="terms-view-btn"
+                  id="btn-view-rules"
+                >
+                  보기
+                </button>
+              </div>
+              <div class="terms-content" id="terms-rules-content">
+                * 입장 시 신분증을 확인하니 신분증 필수 지참해주시기 바랍니다.
+                (미성년자 이용방지) * 파티 진행 중 일부 시간 촬영이 진행됩니다.
+                인물에게는 식별 불가할 정도의 블러 처리가 적용되며, 홍보
+                영상으로 활용될 수 있습니다. * 행사 중 발생한 사고의 민형사상
+                책임은 본인에게 있으며 물품 손괴 시 원가배상을 원칙으로 합니다.
+                * 만취자, 과도한 스킨십 등 타인에게 피해 주는 행위를 하시면 즉시
+                귀가 조치됩니다. * 타 파티 관계자(호스트, 스탭)는 입장
+                불가합니다. 추후 적발시 민/형사상 조치가 있을 수 있는 점 참고
+                부탁드립니다. 어떠한 경우에도 환불 불가하며 강제 퇴거
+                조치됩니다.
+              </div>
+            </div>
+            <div class="terms-item">
+              <div class="terms-item-row">
+                <label class="terms-check-row">
+                  <input type="checkbox" id="agree-privacy" />
+                  <span>(필수) 개인정보 수집 및 이용 동의</span>
+                </label>
+                <button
+                  type="button"
+                  class="terms-view-btn"
+                  id="btn-view-privacy"
+                >
+                  보기
+                </button>
+              </div>
+              <div class="terms-content" id="terms-privacy-content">
+                ▶ 수집된 개인정보의 이용 목적 * 파티 신청 및 서비스 관련 안내
+                문자(SMS) 발송 or 카카오톡 * 서비스 이용 및 상담, 부정이용 확인
+                방지 * 파티 미 참여에 따른 계좌이체 환불 * 예약 및 상품주문 확인
+                * 광고성 정보 수신 (추후 어느 시점에라도 철회 가능) ▶ 수집하는
+                개인정보의 항목 * 예약자 이름, 휴대전화 번호 ▶ 개인정보의 보유
+                및 이용기간 * 서비스 제공 완료 후 최대 3년간 보관 후 즉시 파기 *
+                단, 관계 법령(전자상거래법 등)에 따라 보존이 필요한 경우 해당
+                기간 동안 보관할 수 있음 ▶ 제3자 제공 및 개인정보 처리 위탁 *
+                ODD PARTY 이용자의 개인정보를 제3자에게 제공하지 않습니다. *
+                다만, 서비스 제공을 위해 아래와 같이 개인정보 처리 업무를
+                위탁하고 있습니다. - 수탁사: 네이버클라우드 주식회사 - 위탁업무
+                내용: 문자(SMS) 발송 서비스(SENS)
+              </div>
+            </div>
+          </div>
+          <span class="field-error" id="err-terms"
+            >이용 약관에 동의해 주세요.</span
+          >
+        </div>
+
+        <!-- 인스타그램 아이디 (선택) -->
+        <div class="field-group">
+          <label class="field-label" for="field-instagram">
+            인스타그램 아이디 <span class="field-optional">(선택)</span>
+          </label>
+          <div class="instagram-hint">
+            <p>
+              @odd_party 팔로워 대상 추첨을 통해 무료초대 이벤트를 드리고
+              있습니다.
+            </p>
+            <p>당첨자께는 개별 DM 연락드립니다.</p>
+          </div>
+          <input
+            class="text-input"
+            type="text"
+            id="field-instagram"
+            name="instagram"
+            placeholder="예: odd_party"
+            autocomplete="off"
+            inputmode="text"
+          />
+        </div>
+
+        <!-- 제출 -->
+        <div class="submit-section">
+          <button class="submit-btn" type="submit" id="submit-btn">
+            <span class="btn-text">신청하기 🎉</span>
+            <span class="spinner" aria-hidden="true"></span>
+          </button>
+          <p class="submit-note dynamic-load" id="form-submit-note">
+            접수 후 입금 완료 시 신청이 확정됩니다.<br />
+            계좌: <span id="form-submit-note-bank">농협</span>
+            <span id="form-submit-note-account">351-0948-4473-43</span> (<span
+              id="form-submit-note-holder"
+              >이@봄</span
+            >)
+          </p>
+        </div>
+      </form>
+
+      <!-- 파티 규칙 -->
+      <div class="party-rules">
+        <p class="party-rules-title" id="form-rules-title">
+          ODD PARTY 참여 규칙
+        </p>
+        <ol class="party-rules-list" id="form-rules-list">
+          <li>노쇼(No-show) 시 향후 파티 참여가 제한됩니다.</li>
+          <li>다른 참가자에게 불쾌감을 주는 행동은 퇴장 조치될 수 있습니다.</li>
+          <li>
+            과도한 음주는 삼가주세요. 즐거운 파티를 위한 매너를 지켜주세요.
+          </li>
+          <li>
+            파티 중 촬영이 진행될 수 있으며, 참여 시 초상권 사용에 동의하는
+            것으로 간주됩니다.
+          </li>
+        </ol>
+      </div>
+
+      <!-- 환불 규정 및 안내 -->
+      <div class="refund-policy">
+        <p class="refund-title" id="form-refund-title">참가비 환불 규정</p>
+        <ul class="refund-list" id="form-refund-list">
+          <li>파티 4일 전까지 취소: 전액 환불</li>
+          <li>파티 3일 전~당일 취소: 환불 불가</li>
+        </ul>
+        <p class="refund-notice" id="form-refund-notice">
+          * 파티내에서는 촬영이 있을 수 있습니다. 파티 참여는 초상권 동의에
+          해당합니다. (추후 영상은 얼굴 식별이 불가한 수준으로 모자이크 처리하니
+          안심하세요!)
+        </p>
+      </div>
+    </main>
+
+    <script src="assets/js/common.js?v=3"></script>
+    <script src="assets/js/form.js?v=3"></script>
+  </body>
 </html>

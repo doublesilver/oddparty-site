@@ -1,201 +1,356 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ODD PARTY — 낯선 사람들이 만나는 밤</title>
-  <meta name="description" content="20-30대 소셜 파티. 편안하고 세련된 만남의 공간." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://oddparty.vercel.app/" />
-  <meta property="og:image" content="https://oddparty.vercel.app/assets/images/party-hero.png" />
-  <meta property="og:title" content="ODD PARTY — 낯선 사람들이 만나는 밤" />
-  <meta property="og:description" content="20-30대 소셜 파티. 편안하고 세련된 만남의 공간." />
-  <link rel="icon" type="image/png" href="assets/images/favicon.png" />
-  <meta name="theme-color" content="#0d0a18" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:image" content="https://oddparty.vercel.app/assets/images/party-hero.png" />
-  <meta name="twitter:title" content="ODD PARTY — 낯선 사람들이 만나는 밤" />
-  <meta name="twitter:description" content="20-30대 소셜 파티. 편안하고 세련된 만남의 공간." />
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
-  <link rel="stylesheet" href="assets/css/styles.css" />
-  <style>.dynamic-load{opacity:0;transition:opacity .2s}.dynamic-load.loaded{opacity:1}</style>
-</head>
-<body class="dynamic-load">
-
-  <!-- =================== HERO =================== -->
-  <section class="hero" id="hero" aria-labelledby="hero-title">
-    <div class="hero-bg" role="img" aria-label="파티 분위기 배경 이미지"></div>
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-      <div class="hero-badges">
-        <span class="hero-badge"><span class="hero-badge-dot fri"></span>금요일</span>
-        <span class="hero-badge"><span class="hero-badge-dot sat"></span>토요일</span>
-        <span class="hero-badge"><span class="hero-badge-dot sun"></span>일요일</span>
-      </div>
-      <h1 class="hero-title" id="hero-title">
-        낯선 사람들이<br/>
-        <span class="hero-title-accent">만나는 밤</span>
-      </h1>
-      <p class="hero-sub" id="main-hero-sub">20~30대 소셜 파티 · ODD PARTY</p>
-      <div class="scarcity-badge" id="scarcity-badge">
-        <span class="scarcity-dot"></span>
-        <span class="scarcity-text">이번 주 파티 잔여석 마감 임박!</span>
-      </div>
-      <a href="form.html" class="btn btn-primary" style="min-width:200px;margin-top:var(--sp-lg);">
-        신청하기 →
-      </a>
-    </div>
-  </section>
-
-  <!-- =================== 파티 소개 =================== -->
-  <section class="section intro-section" id="about" aria-labelledby="intro-title">
-    <div class="container">
-      <p class="section-label">About</p>
-      <h2 class="section-title" id="intro-title">ODD PARTY란?</h2>
-      <div class="intro-body section-desc fade-up">
-        <p id="main-about-p1">
-          ODD PARTY는 혼자 가도 어색하지 않은 소셜 파티입니다.
-          직장·학교·동네 어디에서도 만날 수 없는 새로운 인연을 만들어 드립니다.
-          처음 만나는 사이도 자연스럽게 어울릴 수 있도록, 감각적인 공간과 즐거운 프로그램을 준비했습니다.
-        </p>
-        <p id="main-about-p2">
-          매주 금·토·일 진행되며, 서울 건대 / 영등포 두 지점에서 만나볼 수 있습니다.
-          20~30대라면 누구나 편하게 신청하실 수 있어요. 혼자 오셔도 충분히 즐길 수 있습니다.
-        </p>
-      </div>
-      <div class="chip-row fade-up">
-        <span class="chip">📍 건대</span>
-        <span class="chip">📍 영등포</span>
-        <span class="chip">🗓 매주 금·토·일</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- =================== FAQ =================== -->
-  <section class="section faq-section" id="faq" aria-labelledby="faq-title">
-    <div class="container">
-      <p class="section-label">FAQ</p>
-      <h2 class="section-title" id="faq-title">자주 묻는 질문</h2>
-      <ul class="faq-list" id="faq-list-container" role="list">
-        <!-- FAQ items loaded dynamically from API -->
-      </ul>
-    </div>
-  </section>
-
-  <!-- =================== 가격 =================== -->
-  <section class="section price-section" id="price" aria-labelledby="price-title">
-    <div class="container">
-      <p class="section-label">Price</p>
-      <h2 class="section-title" id="price-title">지점별 가격</h2>
-      <div class="price-grid fade-up dynamic-load" id="main-price-grid">
-        <!-- 가격 카드가 JS로 동적 생성됩니다 -->
-      </div>
-      <div class="price-info fade-up" id="main-price-info">
-        주류및 음료는 모든 지점 제공됩니다! (한잔등 제한 없음)<br/>
-        할인코드 보유 시 신청 폼 입력란에 기재해 주세요. 할인은 최종 결제 금액에서 차감됩니다.
-      </div>
-    </div>
-  </section>
-
-  <!-- =================== GALLERY =================== -->
-  <section class="section gallery-section" id="gallery" aria-labelledby="gallery-title">
-    <div class="container">
-      <p class="section-label">Highlights</p>
-      <h2 class="section-title" id="gallery-title">파티 하이라이트</h2>
-    </div>
-    <div class="gallery-track-wrap">
-      <div class="gallery-track" id="gallery-track" role="list" tabindex="0" aria-label="파티 하이라이트 갤러리">
-        <div class="gallery-card" role="listitem">
-          <picture>
-            <source srcset="assets/images/gallery-1.webp" type="image/webp" />
-            <img class="gallery-img" src="assets/images/gallery-1.png" alt="파티 하이라이트 1" loading="lazy" />
-          </picture>
-          <p class="gallery-caption">✨ 모두가 주인공이 되는 밤</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ODD PARTY — 낯선 사람들이 만나는 밤</title>
+    <meta
+      name="description"
+      content="20-30대 소셜 파티. 편안하고 세련된 만남의 공간."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://oddparty.vercel.app/" />
+    <meta
+      property="og:image"
+      content="https://oddparty.vercel.app/assets/images/party-hero.png"
+    />
+    <meta property="og:title" content="ODD PARTY — 낯선 사람들이 만나는 밤" />
+    <meta
+      property="og:description"
+      content="20-30대 소셜 파티. 편안하고 세련된 만남의 공간."
+    />
+    <link rel="icon" type="image/png" href="assets/images/favicon.png" />
+    <meta name="theme-color" content="#0d0a18" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:image"
+      content="https://oddparty.vercel.app/assets/images/party-hero.png"
+    />
+    <meta name="twitter:title" content="ODD PARTY — 낯선 사람들이 만나는 밤" />
+    <meta
+      name="twitter:description"
+      content="20-30대 소셜 파티. 편안하고 세련된 만남의 공간."
+    />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <style>
+      .dynamic-load {
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .dynamic-load.loaded {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body class="dynamic-load">
+    <!-- =================== HERO =================== -->
+    <section class="hero" id="hero" aria-labelledby="hero-title">
+      <div
+        class="hero-bg"
+        role="img"
+        aria-label="파티 분위기 배경 이미지"
+      ></div>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="hero-badges">
+          <span class="hero-badge"
+            ><span class="hero-badge-dot fri"></span>금요일</span
+          >
+          <span class="hero-badge"
+            ><span class="hero-badge-dot sat"></span>토요일</span
+          >
+          <span class="hero-badge"
+            ><span class="hero-badge-dot sun"></span>일요일</span
+          >
         </div>
-        <div class="gallery-card" role="listitem">
-          <picture>
-            <source srcset="assets/images/gallery-2.webp" type="image/webp" />
-            <img class="gallery-img" src="assets/images/gallery-2.png" alt="파티 하이라이트 2" loading="lazy" />
-          </picture>
-          <p class="gallery-caption">🥂 건배, 새로운 만남</p>
+        <h1 class="hero-title" id="hero-title">
+          낯선 사람들이<br />
+          <span class="hero-title-accent">만나는 밤</span>
+        </h1>
+        <p class="hero-sub" id="main-hero-sub">20~30대 소셜 파티 · ODD PARTY</p>
+        <div class="scarcity-badge" id="scarcity-badge">
+          <span class="scarcity-dot"></span>
+          <span class="scarcity-text">이번 주 파티 잔여석 마감 임박!</span>
         </div>
-        <div class="gallery-card" role="listitem">
-          <picture>
-            <source srcset="assets/images/gallery-3.webp" type="image/webp" />
-            <img class="gallery-img" src="assets/images/gallery-3.png" alt="파티 하이라이트 3" loading="lazy" />
-          </picture>
-          <p class="gallery-caption">🎯 아이스브레이킹 게임</p>
-        </div>
-        <div class="gallery-card" role="listitem">
-          <picture>
-            <source srcset="assets/images/gallery-4.webp" type="image/webp" />
-            <img class="gallery-img" src="assets/images/gallery-4.png" alt="파티 하이라이트 4" loading="lazy" />
-          </picture>
-          <p class="gallery-caption">💬 대화가 끊이지 않는 테이블</p>
-        </div>
-        <div class="gallery-card" role="listitem">
-          <picture>
-            <source srcset="assets/images/gallery-5.webp" type="image/webp" />
-            <img class="gallery-img" src="assets/images/gallery-5.png" alt="파티 하이라이트 5" loading="lazy" />
-          </picture>
-          <p class="gallery-caption">🌙 오늘 밤이 특별한 이유</p>
-        </div>
-      </div>
-    </div>
-    <div class="container">
-      <div class="gallery-dots" id="gallery-dots" role="tablist" aria-label="갤러리 페이지">
-        <button class="gallery-dot active" role="tab" aria-selected="true" aria-label="슬라이드 1"></button>
-        <button class="gallery-dot" role="tab" aria-selected="false" aria-label="슬라이드 2"></button>
-        <button class="gallery-dot" role="tab" aria-selected="false" aria-label="슬라이드 3"></button>
-        <button class="gallery-dot" role="tab" aria-selected="false" aria-label="슬라이드 4"></button>
-        <button class="gallery-dot" role="tab" aria-selected="false" aria-label="슬라이드 5"></button>
-      </div>
-    </div>
-  </section>
-
-  <!-- =================== 마감 & 공유 =================== -->
-  <section class="section cta-section" aria-labelledby="cta-title">
-    <div class="container">
-      <div class="cta-card fade-up">
-        <h2 class="cta-title" id="main-cta-title">다음 파티에 초대합니다</h2>
-        <p class="cta-sub" id="main-cta-sub">
-          매 회차 소수 정예로 진행됩니다. 지금 바로 초대를 신청하세요!
-        </p>
-        <div class="share-row">
-          <button class="share-btn" onclick="sharePage()" type="button">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-              <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
-            </svg>
-            공유하기
-          </button>
-        </div>
-        <a href="form.html" class="btn btn-primary" style="min-width:200px;">
+        <a
+          href="form.html"
+          class="btn btn-primary"
+          style="min-width: 200px; margin-top: var(--sp-lg)"
+        >
           신청하기 →
         </a>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- =================== FOOTER =================== -->
-  <footer class="site-footer">
-    <p>© 2026 ODD PARTY. All rights reserved.</p>
-    <p style="margin-top:4px;">문의: 카카오톡 채널 @ODD파티</p>
-  </footer>
-
-  <!-- =================== STICKY CTA =================== -->
-  <div class="sticky-cta" id="sticky-cta" role="complementary" aria-label="빠른 신청">
-    <div class="sticky-cta-inner">
-      <div class="sticky-cta-text">
-        <strong>ODD PARTY</strong>
-        <span id="sticky-cta-text">이번 주 파티 마감 임박!</span>
+    <!-- =================== 파티 소개 =================== -->
+    <section
+      class="section intro-section"
+      id="about"
+      aria-labelledby="intro-title"
+    >
+      <div class="container">
+        <p class="section-label">About</p>
+        <h2 class="section-title" id="intro-title">ODD PARTY란?</h2>
+        <div class="intro-body section-desc fade-up">
+          <p id="main-about-p1">
+            ODD PARTY는 혼자 가도 어색하지 않은 소셜 파티입니다. 직장·학교·동네
+            어디에서도 만날 수 없는 새로운 인연을 만들어 드립니다. 처음 만나는
+            사이도 자연스럽게 어울릴 수 있도록, 감각적인 공간과 즐거운
+            프로그램을 준비했습니다.
+          </p>
+          <p id="main-about-p2">
+            매주 금·토·일 진행되며, 서울 건대 / 영등포 두 지점에서 만나볼 수
+            있습니다. 20~30대라면 누구나 편하게 신청하실 수 있어요. 혼자 오셔도
+            충분히 즐길 수 있습니다.
+          </p>
+        </div>
+        <div class="chip-row fade-up">
+          <span class="chip">📍 건대</span>
+          <span class="chip">📍 영등포</span>
+          <span class="chip">🗓 매주 금·토·일</span>
+        </div>
       </div>
-      <a href="form.html" class="btn btn-primary btn-small">신청하기 →</a>
-    </div>
-  </div>
+    </section>
 
-  <script src="assets/js/common.js?v=3"></script>
-  <script src="assets/js/main.js?v=3"></script>
-</body>
+    <!-- =================== FAQ =================== -->
+    <section class="section faq-section" id="faq" aria-labelledby="faq-title">
+      <div class="container">
+        <p class="section-label">FAQ</p>
+        <h2 class="section-title" id="faq-title">자주 묻는 질문</h2>
+        <ul class="faq-list" id="faq-list-container" role="list">
+          <!-- FAQ items loaded dynamically from API -->
+        </ul>
+      </div>
+    </section>
+
+    <!-- =================== 가격 =================== -->
+    <section
+      class="section price-section"
+      id="price"
+      aria-labelledby="price-title"
+    >
+      <div class="container">
+        <p class="section-label">Price</p>
+        <h2 class="section-title" id="price-title">지점별 가격</h2>
+        <div class="price-grid fade-up dynamic-load" id="main-price-grid">
+          <!-- 가격 카드가 JS로 동적 생성됩니다 -->
+        </div>
+        <div class="price-info fade-up" id="main-price-info">
+          주류및 음료는 모든 지점 제공됩니다! (한잔등 제한 없음)<br />
+          할인코드 보유 시 신청 폼 입력란에 기재해 주세요. 할인은 최종 결제
+          금액에서 차감됩니다.
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== GALLERY =================== -->
+    <section
+      class="section gallery-section"
+      id="gallery"
+      aria-labelledby="gallery-title"
+    >
+      <div class="container">
+        <p class="section-label">Highlights</p>
+        <h2 class="section-title" id="gallery-title">파티 하이라이트</h2>
+      </div>
+      <div class="gallery-track-wrap">
+        <div
+          class="gallery-track"
+          id="gallery-track"
+          role="list"
+          tabindex="0"
+          aria-label="파티 하이라이트 갤러리"
+        >
+          <div class="gallery-card" role="listitem">
+            <picture>
+              <source srcset="assets/images/gallery-1.webp" type="image/webp" />
+              <img
+                class="gallery-img"
+                src="assets/images/gallery-1.png"
+                alt="파티 하이라이트 1"
+                loading="lazy"
+              />
+            </picture>
+            <p class="gallery-caption">✨ 모두가 주인공이 되는 밤</p>
+          </div>
+          <div class="gallery-card" role="listitem">
+            <picture>
+              <source srcset="assets/images/gallery-2.webp" type="image/webp" />
+              <img
+                class="gallery-img"
+                src="assets/images/gallery-2.png"
+                alt="파티 하이라이트 2"
+                loading="lazy"
+              />
+            </picture>
+            <p class="gallery-caption">🥂 건배, 새로운 만남</p>
+          </div>
+          <div class="gallery-card" role="listitem">
+            <picture>
+              <source srcset="assets/images/gallery-3.webp" type="image/webp" />
+              <img
+                class="gallery-img"
+                src="assets/images/gallery-3.png"
+                alt="파티 하이라이트 3"
+                loading="lazy"
+              />
+            </picture>
+            <p class="gallery-caption">🎯 아이스브레이킹 게임</p>
+          </div>
+          <div class="gallery-card" role="listitem">
+            <picture>
+              <source srcset="assets/images/gallery-4.webp" type="image/webp" />
+              <img
+                class="gallery-img"
+                src="assets/images/gallery-4.png"
+                alt="파티 하이라이트 4"
+                loading="lazy"
+              />
+            </picture>
+            <p class="gallery-caption">💬 대화가 끊이지 않는 테이블</p>
+          </div>
+          <div class="gallery-card" role="listitem">
+            <picture>
+              <source srcset="assets/images/gallery-5.webp" type="image/webp" />
+              <img
+                class="gallery-img"
+                src="assets/images/gallery-5.png"
+                alt="파티 하이라이트 5"
+                loading="lazy"
+              />
+            </picture>
+            <p class="gallery-caption">🌙 오늘 밤이 특별한 이유</p>
+          </div>
+        </div>
+      </div>
+      <div class="container">
+        <div
+          class="gallery-dots"
+          id="gallery-dots"
+          role="tablist"
+          aria-label="갤러리 페이지"
+        >
+          <button
+            class="gallery-dot active"
+            role="tab"
+            aria-selected="true"
+            aria-label="슬라이드 1"
+          ></button>
+          <button
+            class="gallery-dot"
+            role="tab"
+            aria-selected="false"
+            aria-label="슬라이드 2"
+          ></button>
+          <button
+            class="gallery-dot"
+            role="tab"
+            aria-selected="false"
+            aria-label="슬라이드 3"
+          ></button>
+          <button
+            class="gallery-dot"
+            role="tab"
+            aria-selected="false"
+            aria-label="슬라이드 4"
+          ></button>
+          <button
+            class="gallery-dot"
+            role="tab"
+            aria-selected="false"
+            aria-label="슬라이드 5"
+          ></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== 파티 사진 =================== -->
+    <section class="photo-section">
+      <div class="photo-scroll-list">
+        <div class="photo-scroll-item">
+          <img src="assets/images/photo-4.jpg" alt="파티 현장" loading="lazy" />
+        </div>
+        <div class="photo-scroll-item">
+          <img src="assets/images/photo-3.jpg" alt="파티 현장" loading="lazy" />
+        </div>
+        <div class="photo-scroll-item">
+          <img src="assets/images/photo-2.jpg" alt="파티 현장" loading="lazy" />
+        </div>
+        <div class="photo-scroll-item">
+          <img src="assets/images/photo-1.png" alt="파티 현장" loading="lazy" />
+        </div>
+        <div class="photo-scroll-item">
+          <img
+            src="assets/images/photo-timeline.jpg"
+            alt="파티 타임라인"
+            loading="lazy"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== 마감 & 공유 =================== -->
+    <section class="section cta-section" aria-labelledby="cta-title">
+      <div class="container">
+        <div class="cta-card fade-up">
+          <h2 class="cta-title" id="main-cta-title">다음 파티에 초대합니다</h2>
+          <p class="cta-sub" id="main-cta-sub">
+            매 회차 소수 정예로 진행됩니다. 지금 바로 초대를 신청하세요!
+          </p>
+          <div class="share-row">
+            <button class="share-btn" onclick="sharePage()" type="button">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
+              </svg>
+              공유하기
+            </button>
+          </div>
+          <a href="form.html" class="btn btn-primary" style="min-width: 200px">
+            신청하기 →
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== FOOTER =================== -->
+    <footer class="site-footer">
+      <p>© 2026 ODD PARTY. All rights reserved.</p>
+      <p style="margin-top: 4px">문의: 카카오톡 채널 @ODD파티</p>
+    </footer>
+
+    <!-- =================== STICKY CTA =================== -->
+    <div
+      class="sticky-cta"
+      id="sticky-cta"
+      role="complementary"
+      aria-label="빠른 신청"
+    >
+      <div class="sticky-cta-inner">
+        <div class="sticky-cta-text">
+          <strong>ODD PARTY</strong>
+          <span id="sticky-cta-text">이번 주 파티 마감 임박!</span>
+        </div>
+        <a href="form.html" class="btn btn-primary btn-small">신청하기 →</a>
+      </div>
+    </div>
+
+    <script src="assets/js/common.js?v=3"></script>
+    <script src="assets/js/main.js?v=3"></script>
+  </body>
 </html>
