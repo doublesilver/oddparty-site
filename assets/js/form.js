@@ -109,9 +109,17 @@ function renderCalendar() {
               "일(" +
               CAL_DAY_NAMES[dt.getDay()] +
               ")";
-            if (label) text += " · " + label;
-            if (status && status !== "마감") text += " [" + status + "]";
-            info.textContent = text;
+            if (label) text += " · " + esc(label);
+            if (status && status !== "마감") {
+              var statusColor = status === "마감임박" ? "#f43f5e" : "#22c55e";
+              text +=
+                ' <span style="color:' +
+                statusColor +
+                ';font-weight:700">[' +
+                esc(status) +
+                "]</span>";
+            }
+            info.innerHTML = text;
             info.style.display = "block";
             showError("err-date", false);
             onDateSelect(ds);
