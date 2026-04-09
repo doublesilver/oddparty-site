@@ -217,24 +217,9 @@ class ApplicationStore:
             threshold_closed = int(self.get_site_content_value("scarcity_threshold_closed") or 100)
         except (ValueError, TypeError):  # pragma: no cover
             threshold_closed = 100
-        # party_dates에서 dayName 목록을 가져와 기준으로 사용
-        party_dates_raw = self.get_site_content_value("party_dates")
-        day_names = set()
-        if party_dates_raw:
-            try:
-                for pd in json.loads(party_dates_raw):
-                    if pd.get("dayName"):
-                        day_names.add(pd["dayName"])
-            except (json.JSONDecodeError, TypeError):  # pragma: no cover
-                pass
-        # party_dates가 없으면 기본 금/토/일
-        if not day_names:
-            day_names = {"금요일", "토요일", "일요일"}
-        all_days = day_names | set(caps.keys()) | set(counts.keys())
-        result = {}
-        for day in all_days:
-            cap = caps.get(day, 30)
-            count = counts.get(day, 0)
+        def _build_entry(key: str, day_name: str | None = None, label: str | None = None) -> dict:
+            cap = caps.get(key, caps.get(day_name, 30) if day_name else 30)
+            count = counts.get(key, 0)
             pct = (count / cap * 100) if cap > 0 else 0
             if cap == 0 or pct >= threshold_closed:
                 level = "마감"
@@ -242,7 +227,39 @@ class ApplicationStore:
                 level = "마감임박"
             else:
                 level = "모집중"
-            result[day] = {"capacity": cap, "count": count, "level": level}
+            entry = {"capacity": cap, "count": count, "level": level}
+            if day_name:
+                entry["dayName"] = day_name
+            if label:
+                entry["label"] = label
+            return entry
+
+        # party_dates에서 날짜 목록을 가져와 날짜별 scarcity를 계산
+        party_dates_raw = self.get_site_content_value("party_dates")
+        party_dates = []
+        if party_dates_raw:
+            try:
+                loaded_dates = json.loads(party_dates_raw)
+                if isinstance(loaded_dates, list):
+                    party_dates = loaded_dates
+            except (json.JSONDecodeError, TypeError):  # pragma: no cover
+                pass
+        if party_dates:
+            result = {}
+            for pd in party_dates:
+                date_key = str(pd.get("date", "")).strip()
+                if not date_key:
+                    continue
+                day_name = str(pd.get("dayName", "")).strip() or None
+                label = str(pd.get("label", "")).strip() or date_key
+                result[date_key] = _build_entry(date_key, day_name=day_name, label=label)
+            return result
+
+        # party_dates가 없으면 기본 금/토/일 요일 키를 유지
+        day_names = {"금요일", "토요일", "일요일"} | set(caps.keys())
+        result = {}
+        for day in day_names:
+            result[day] = _build_entry(day)
         return result
 
     def create_application(self, payload: dict) -> dict:
@@ -1058,9 +1075,15 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
             if override_raw:
                 try:
                     overrides = json.loads(override_raw) if isinstance(override_raw, str) else override_raw
-                    for day, level in overrides.items():
-                        if day in result["dates"] and level:
-                            result["dates"][day]["level"] = level
+                    for key, level in overrides.items():
+                        if not level:
+                            continue
+                        if key in result["dates"]:
+                            result["dates"][key]["level"] = level
+                            continue
+                        for info in result["dates"].values():
+                            if info.get("dayName") == key:
+                                info["level"] = level
                 except Exception:
                     pass
             custom_text = STORE.get_site_content_value("scarcity-badge-text")
@@ -1544,6 +1567,12 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
     def _read_payload(self) -> dict:
         length = int(self.headers.get("Content-Length", "0") or 0)
         if length > self._MAX_PAYLOAD:
+            remaining = length
+            while remaining > 0:
+                chunk = self.rfile.read(min(65536, remaining))
+                if not chunk:
+                    break
+                remaining -= len(chunk)
             raise ValueError("요청 본문이 너무 큽니다.")
         raw_body = self.rfile.read(length) if length > 0 else b""
         content_type = self.headers.get("Content-Type", "")

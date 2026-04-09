@@ -545,7 +545,7 @@
        CAPACITY
     ============================================================ */
     var _partyDates = []; /* [{date: "2026-03-14", label: "14일(토)", dayName: "토요일"}] */
-    var _scarcityOverrides = {}; /* {"토요일": "모집중", "금요일": "마감"} */
+    var _scarcityOverrides = {}; /* {"2026-03-14": "모집중"} */
     var _thresholdUrgent = 80;
     var _thresholdClosed = 100;
     var _defaultDays = ['금요일', '토요일', '일요일'];
@@ -601,6 +601,26 @@
       });
     }
 
+    function getPartyDateKey(partyDate) {
+      if (!partyDate) return '';
+      return partyDate.date || partyDate.dayName || partyDate.label || '';
+    }
+
+    function getCapacityItems() {
+      return (_partyDates.length > 0 ? _partyDates : _getDefaultPartyDates()).map(function(pd) {
+        return {
+          key: getPartyDateKey(pd),
+          label: pd.label || pd.date || pd.dayName || '',
+          dayName: pd.dayName || '',
+          date: pd.date || ''
+        };
+      }).filter(function(item) { return !!item.key; });
+    }
+
+    function getScarcityInfoByKey(dates, key, dayName) {
+      return dates[key] || (dayName ? dates[dayName] : null) || {};
+    }
+
 
 
     function renderPartyDatesList() {
@@ -615,8 +635,10 @@
       html += '<thead><tr style="text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">';
       html += '<th style="padding:6px;">표시명</th><th style="padding:6px;">날짜</th><th style="padding:6px;">요일</th><th style="padding:6px;">상태</th><th style="padding:6px;text-align:right;">관리</th></tr></thead><tbody>';
       _partyDates.forEach(function(d, i) {
-        var isManual = _scarcityOverrides.hasOwnProperty(d.dayName);
-        var currentStatus = isManual ? _scarcityOverrides[d.dayName] : '';
+        var overrideKey = getPartyDateKey(d);
+        var legacyKey = d.dayName || '';
+        var isManual = _scarcityOverrides.hasOwnProperty(overrideKey) || (legacyKey && _scarcityOverrides.hasOwnProperty(legacyKey));
+        var currentStatus = _scarcityOverrides[overrideKey] || (legacyKey ? _scarcityOverrides[legacyKey] : '') || '';
         var statusColor = isManual ? (scarcityColors[currentStatus] || '#22c55e') : 'var(--muted)';
         html += '<tr style="border-bottom:1px solid var(--border);">';
         html += '<td style="padding:6px;font-weight:600;">' + esc(d.label || d.date) + '</td>';
@@ -641,7 +663,9 @@
     }
 
     function removePartyDate(idx) {
-      if (!confirm((_partyDates[idx].label || _partyDates[idx].date) + ' 날짜를 삭제하시겠습니까?')) return;
+      var removed = _partyDates[idx];
+      if (!confirm((removed.label || removed.date) + ' 날짜를 삭제하시겠습니까?')) return;
+      delete _scarcityOverrides[getPartyDateKey(removed)];
       _partyDates.splice(idx, 1);
       savePartyDates();
     }
@@ -654,17 +678,24 @@
       if (newDate === null) return;
       var newDayName = prompt('요일명 (예: 토요일):', d.dayName || '');
       if (newDayName === null) return;
+      var prevKey = getPartyDateKey(d);
       _partyDates[idx] = { date: newDate.trim(), label: newLabel.trim(), dayName: newDayName.trim() };
+      var nextKey = getPartyDateKey(_partyDates[idx]);
+      if (prevKey !== nextKey && _scarcityOverrides.hasOwnProperty(prevKey)) {
+        _scarcityOverrides[nextKey] = _scarcityOverrides[prevKey];
+        delete _scarcityOverrides[prevKey];
+      }
       savePartyDates();
     }
 
-    function changeCapacityStatus(dayName, newStatus) {
+    function changeCapacityStatus(dateKey, label, newStatus) {
+      if (!dateKey) return;
       if (newStatus === '') {
-        delete _scarcityOverrides[dayName];
+        delete _scarcityOverrides[dateKey];
       } else {
-        _scarcityOverrides[dayName] = newStatus;
+        _scarcityOverrides[dateKey] = newStatus;
       }
-      _saveScarcityOverrides(dayName, newStatus === '' ? '자동' : newStatus);
+      _saveScarcityOverrides(label || dateKey, newStatus === '' ? '자동' : newStatus);
     }
 
     function saveThresholds() {
@@ -705,14 +736,15 @@
     }
 
     function changePartyDateStatus(idx, newStatus) {
-      var dayName = _partyDates[idx].dayName;
-      if (!dayName) return;
+      var partyDate = _partyDates[idx];
+      var dateKey = getPartyDateKey(partyDate);
+      if (!dateKey) return;
       if (newStatus === '') {
-        delete _scarcityOverrides[dayName];
+        delete _scarcityOverrides[dateKey];
       } else {
-        _scarcityOverrides[dayName] = newStatus;
+        _scarcityOverrides[dateKey] = newStatus;
       }
-      _saveScarcityOverrides(dayName, newStatus === '' ? '자동' : newStatus);
+      _saveScarcityOverrides(partyDate.label || dateKey, newStatus === '' ? '자동' : newStatus);
     }
 
     function savePartyDates() {
@@ -761,41 +793,36 @@
     function renderCapacity(data) {
       var grid = document.getElementById('capacity-grid');
       var dates = data.dates || {};
-      /* 파티 날짜의 dayName을 기준으로 정원 카드 생성 */
-      var days = [];
-      var seen = {};
-      _partyDates.forEach(function(pd) {
-        var key = pd.dayName || pd.label || pd.date;
-        if (!seen[key]) { seen[key] = true; days.push(key); }
-      });
-      /* 파티 날짜가 없으면 기본 금/토/일 */
-      if (days.length === 0) days = _defaultDays.slice();
+      var items = getCapacityItems();
       var html = '';
 
       var scarcityColors = { '모집중': '#22c55e', '마감임박': '#f59e0b', '마감': '#ef4444' };
-      days.forEach(function(day) {
-        var info = dates[day] || {};
+      items.forEach(function(item) {
+        var info = getScarcityInfoByKey(dates, item.key, item.dayName);
         var capacity = info.capacity != null ? info.capacity : 30;
         var count = info.count != null ? info.count : 0;
         var pct = capacity > 0 ? Math.min(100, Math.round(count / capacity * 100)) : (capacity === 0 ? 100 : 0);
         var level = capacity === 0 ? 'high' : (pct < 50 ? 'low' : pct < 80 ? 'mid' : 'high');
         /* 수동 오버라이드 우선, 없으면 자동 계산된 level 사용 */
-        var isManual = _scarcityOverrides.hasOwnProperty(day);
-        var currentStatus = isManual ? _scarcityOverrides[day] : '';
+        var isManual = _scarcityOverrides.hasOwnProperty(item.key) || (item.dayName && _scarcityOverrides.hasOwnProperty(item.dayName));
+        var currentStatus = _scarcityOverrides[item.key] || (item.dayName ? _scarcityOverrides[item.dayName] : '') || '';
         var displayLevel = isManual ? currentStatus : (info.level || '모집중');
         var statusColor = isManual ? (scarcityColors[currentStatus] || '#22c55e') : 'var(--muted)';
+        var title = item.label || item.key;
+        var meta = item.dayName && item.date ? item.dayName + ' · ' + item.date : (item.dayName || item.date || '');
 
         html += '<div class="capacity-card">' +
-          '<div class="capacity-card-day">' + esc(day) + '</div>' +
+          '<div class="capacity-card-day">' + esc(title) + '</div>' +
+          (meta ? '<div style="font-size:var(--fs-xs);color:var(--muted);margin-bottom:4px;">' + esc(meta) + '</div>' : '') +
           '<div class="capacity-stat">' + count + ' / ' + (capacity === 0 ? '마감' : capacity + '명') + ' (' + pct + '%)</div>' +
           '<div class="capacity-bar-wrap"><div class="capacity-bar level-' + level + '" style="width:' + pct + '%"></div></div>' +
           '<div class="capacity-input-row" style="margin-bottom:6px;">' +
-            '<input class="capacity-input" type="number" min="0" value="' + esc(capacity) + '" data-day="' + esc(day) + '" placeholder="정원 (0=마감)" />' +
-            '<button class="capacity-save-btn" data-day="' + esc(day) + '" type="button">저장</button>' +
+            '<input class="capacity-input" type="number" min="0" value="' + esc(capacity) + '" data-day="' + esc(item.key) + '" placeholder="정원 (0=마감)" />' +
+            '<button class="capacity-save-btn" data-day="' + esc(item.key) + '" data-label="' + esc(title) + '" type="button">저장</button>' +
           '</div>' +
           '<div style="display:flex;align-items:center;gap:6px;font-size:var(--fs-xs);">' +
             '<span style="color:var(--muted);">상태:</span>' +
-            '<select onchange="changeCapacityStatus(\'' + esc(day).replace(/'/g, "\\'") + '\', this.value)" ' +
+            '<select onchange="changeCapacityStatus(\'' + esc(item.key).replace(/'/g, "\\'") + '\', \'' + esc(title).replace(/'/g, "\\'") + '\', this.value)" ' +
               'style="padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:' + statusColor + ';font-weight:600;font-size:var(--fs-xs);cursor:pointer;">' +
               '<option value=""' + (!isManual ? ' selected' : '') + '>자동 (' + (info.level || '모집중') + ')</option>' +
               ['모집중', '마감임박', '마감'].map(function(s) { return '<option value="' + s + '"' + (s === currentStatus && isManual ? ' selected' : '') + '>' + s + '</option>'; }).join('') +
@@ -809,15 +836,16 @@
       grid.querySelectorAll('.capacity-save-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
           var day = this.getAttribute('data-day');
+          var label = this.getAttribute('data-label') || day;
           var inp = grid.querySelector('.capacity-input[data-day="' + day + '"]');
           var cap = parseInt(inp.value, 10);
           if (isNaN(cap) || cap < 0) { showToast('올바른 숫자를 입력하세요.', true); return; }
-          saveCapacity(day, cap);
+          saveCapacity(day, label, cap);
         });
       });
     }
 
-    function saveCapacity(day, capacity) {
+    function saveCapacity(day, label, capacity) {
       fetch(API_BASE + '/api/capacity', {
         method: 'POST',
         headers: authHeaders(),
@@ -825,7 +853,7 @@
       })
       .then(function(r) {
         if (!r.ok) throw new Error('save_fail');
-        showToast(day + ' 정원이 ' + capacity + '명으로 저장되었습니다.');
+        showToast((label || day) + ' 정원이 ' + capacity + '명으로 저장되었습니다.');
         loadCapacity();
       })
       .catch(function() {

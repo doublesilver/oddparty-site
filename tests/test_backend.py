@@ -555,8 +555,8 @@ class TestCapacityManagement(unittest.TestCase):
         # 6/10 = 60% → above 50% (urgent) but below 90% (closed)
         self.assertEqual(info["금요일"]["level"], "마감임박")
 
-    def test_get_scarcity_info_uses_party_dates_daynames(self):
-        """Scarcity uses party_dates dayNames as the base keys."""
+    def test_get_scarcity_info_uses_party_dates_date_keys(self):
+        """Scarcity uses party_dates date values as the base keys."""
         self.store.upsert_site_content({
             "party_dates": json.dumps([
                 {"date": "2026-03-20", "label": "20일(금)", "dayName": "금요일"},
@@ -564,8 +564,10 @@ class TestCapacityManagement(unittest.TestCase):
             ])
         })
         info = self.store.get_scarcity_info()
-        self.assertIn("금요일", info)
-        self.assertIn("토요일", info)
+        self.assertIn("2026-03-20", info)
+        self.assertIn("2026-03-21", info)
+        self.assertEqual(info["2026-03-20"]["dayName"], "금요일")
+        self.assertEqual(info["2026-03-21"]["dayName"], "토요일")
 
     def test_get_date_counts_excludes_취소_status(self):
         store = self.store

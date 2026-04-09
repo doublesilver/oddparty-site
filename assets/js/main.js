@@ -118,6 +118,8 @@ async function loadScarcityBadge() {
 
     let text = "";
     let isUrgent = false;
+    const getDisplayLabel = ([key, info]) =>
+      info.label || key.replace("요일", "");
 
     if (closedCount === levels.length && levels.length > 0) {
       text = "이번 주 파티 전일 마감!";
@@ -125,14 +127,14 @@ async function loadScarcityBadge() {
     } else if (closedCount > 0) {
       const closedDays = Object.entries(dates)
         .filter(([, d]) => d.level === "마감")
-        .map(([k]) => k.replace("요일", ""))
+        .map(getDisplayLabel)
         .join("·");
       text = closedDays + " 마감! 서둘러 신청하세요";
       isUrgent = true;
     } else if (urgentCount > 0) {
       const urgentDays = Object.entries(dates)
         .filter(([, d]) => d.level === "마감임박")
-        .map(([k]) => k.replace("요일", ""))
+        .map(getDisplayLabel)
         .join("·");
       text = urgentDays + " 마감 임박! 잔여석이 얼마 남지 않았어요";
       isUrgent = true;

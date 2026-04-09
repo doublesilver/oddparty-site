@@ -199,7 +199,7 @@ async function loadScarcity() {
       calActiveDates.forEach(function (dateKey) {
         var dt = new Date(dateKey + "T00:00:00");
         var dayName = CAL_DAYNAME_MAP[dt.getDay()];
-        var info = dates[dayName];
+        var info = dates[dateKey] || dates[dayName];
         if (info && info.level) {
           calDateStatuses[dateKey] = info.level;
           if (info.level === "마감") {
@@ -218,7 +218,7 @@ async function loadScarcity() {
         if (day === 0 || day === 5 || day === 6) {
           var dateKey = toDateKey(dt);
           var dayName = CAL_DAYNAME_MAP[day];
-          var info = dates[dayName];
+          var info = dates[dateKey] || dates[dayName];
           if (info && info.level) {
             calDateStatuses[dateKey] = info.level;
             if (info.level === "마감") calClosedDates.add(dateKey);
