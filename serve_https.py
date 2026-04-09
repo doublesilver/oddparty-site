@@ -34,7 +34,7 @@ IS_RAILWAY = any(
     os.getenv(key)
     for key in ("RAILWAY_PROJECT_ID", "RAILWAY_ENVIRONMENT_ID", "RAILWAY_SERVICE_ID")
 )
-ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "").strip()
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "oddparty2026").strip()
 ADMIN_TOKEN_FILE = DATA_DIR / ".admin_token"
 
 
