@@ -546,6 +546,7 @@
     ============================================================ */
     var _partyDates = []; /* [{date: "2026-03-14", label: "14일(토)", dayName: "토요일"}] */
     var _scarcityOverrides = {}; /* {"2026-03-14": "모집중"} */
+    var _capacityBranchNames = [];
     var _thresholdUrgent = 80;
     var _thresholdClosed = 100;
     var _defaultDays = ['금요일', '토요일', '일요일'];
@@ -578,11 +579,13 @@
       Promise.all([
         fetch(API_BASE + '/api/scarcity').then(function(r) { return r.ok ? r.json() : {}; }),
         fetch(API_BASE + '/api/party-dates', { headers: { 'Authorization': 'Bearer ' + state.token } }).then(function(r) { return r.ok ? r.json() : { dates: [] }; }),
-        fetch(API_BASE + '/api/site-content').then(function(r) { return r.ok ? r.json() : {}; })
+        fetch(API_BASE + '/api/site-content').then(function(r) { return r.ok ? r.json() : {}; }),
+        fetch(API_BASE + '/api/pricing', { headers: authHeaders() }).then(function(r) { return r.ok ? r.json() : { pricing: {} }; })
       ]).then(function(results) {
         var scarcityData = results[0];
         _partyDates = (results[1].dates || []);
         var siteContent = (results[2].content || {});
+        _capacityBranchNames = getBranchNamesFromPricing((results[3] && results[3].pricing) || {});
         try { _scarcityOverrides = JSON.parse(siteContent.scarcity_override || '{}'); } catch(e) { _scarcityOverrides = {}; }
         if (siteContent.scarcity_threshold_urgent) _thresholdUrgent = parseInt(siteContent.scarcity_threshold_urgent, 10) || 80;
         if (siteContent.scarcity_threshold_closed) _thresholdClosed = parseInt(siteContent.scarcity_threshold_closed, 10) || 100;
@@ -593,11 +596,53 @@
         /* Populate scarcity badge text */
         var badgeTextEl = document.getElementById('scarcity-badge-text');
         if (badgeTextEl && siteContent['scarcity-badge-text']) badgeTextEl.value = siteContent['scarcity-badge-text'];
+        renderNewPartyDateBranchOptions();
         renderCapacity(scarcityData);
         renderPartyDatesList();
       }).catch(function() {
         document.getElementById('capacity-grid').innerHTML =
           '<div class="content-group" style="text-align:center;color:var(--muted);">데이터를 불러오지 못했습니다.</div>';
+      });
+    }
+
+    function getBranchNamesFromPricing(pricing) {
+      var names = Object.keys(pricing || {}).filter(function(key) {
+        return key !== 'part2_base' && key !== 'part2_discount';
+      });
+      if (names.length > 0) return names;
+      return ['건대', '영등포'];
+    }
+
+    function getPartyDateBranches(partyDate) {
+      if (!partyDate || !Array.isArray(partyDate.branches)) return [];
+      return partyDate.branches.filter(function(branch) { return !!branch; });
+    }
+
+    function renderBranchCheckboxes(container, selectedBranches, inputName, itemIndex) {
+      if (!container) return;
+      if (_capacityBranchNames.length === 0) {
+        container.innerHTML = '<span style="color:var(--muted);font-size:var(--fs-xs);">지점 정보를 먼저 불러와 주세요.</span>';
+        return;
+      }
+      var selected = selectedBranches || [];
+      container.innerHTML = _capacityBranchNames.map(function(branch) {
+        var checked = selected.indexOf(branch) >= 0 ? ' checked' : '';
+        var idxAttr = itemIndex != null ? ' data-idx="' + itemIndex + '"' : '';
+        return '<label style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:var(--card);font-size:var(--fs-xs);cursor:pointer;">' +
+          '<input type="checkbox" data-branch-name="' + esc(branch) + '"' + idxAttr + ' data-input-name="' + esc(inputName) + '"' + checked + ' />' +
+          '<span>' + esc(branch) + '</span>' +
+        '</label>';
+      }).join('');
+    }
+
+    function renderNewPartyDateBranchOptions() {
+      renderBranchCheckboxes(document.getElementById('new-party-branches'), [], 'new-party-branches');
+    }
+
+    function getSelectedBranchesFromContainer(container) {
+      if (!container) return [];
+      return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(function(input) {
+        return input.getAttribute('data-branch-name');
       });
     }
 
@@ -633,17 +678,19 @@
       var scarcityColors = { '모집중': '#22c55e', '마감임박': '#f59e0b', '마감': '#ef4444' };
       var html = '<table style="width:100%;font-size:var(--fs-sm);border-collapse:collapse;">';
       html += '<thead><tr style="text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">';
-      html += '<th style="padding:6px;">표시명</th><th style="padding:6px;">날짜</th><th style="padding:6px;">요일</th><th style="padding:6px;">상태</th><th style="padding:6px;text-align:right;">관리</th></tr></thead><tbody>';
+      html += '<th style="padding:6px;">표시명</th><th style="padding:6px;">날짜</th><th style="padding:6px;">요일</th><th style="padding:6px;">허용 지점</th><th style="padding:6px;">상태</th><th style="padding:6px;text-align:right;">관리</th></tr></thead><tbody>';
       _partyDates.forEach(function(d, i) {
         var overrideKey = getPartyDateKey(d);
         var legacyKey = d.dayName || '';
         var isManual = _scarcityOverrides.hasOwnProperty(overrideKey) || (legacyKey && _scarcityOverrides.hasOwnProperty(legacyKey));
         var currentStatus = _scarcityOverrides[overrideKey] || (legacyKey ? _scarcityOverrides[legacyKey] : '') || '';
         var statusColor = isManual ? (scarcityColors[currentStatus] || '#22c55e') : 'var(--muted)';
+        var branchesId = 'party-date-branches-' + i;
         html += '<tr style="border-bottom:1px solid var(--border);">';
         html += '<td style="padding:6px;font-weight:600;">' + esc(d.label || d.date) + '</td>';
         html += '<td style="padding:6px;">' + esc(d.date || '') + '</td>';
         html += '<td style="padding:6px;">' + esc(d.dayName || '') + '</td>';
+        html += '<td style="padding:6px;min-width:220px;"><div id="' + branchesId + '"></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">선택 안 하면 전체 지점 오픈</div></td>';
         html += '<td style="padding:6px;">';
         html += '<select onchange="changePartyDateStatus(' + i + ', this.value)" style="padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:' + statusColor + ';font-weight:600;font-size:var(--fs-xs);cursor:pointer;">';
         html += '<option value=""' + (!isManual ? ' selected' : '') + '>자동</option>';
@@ -660,6 +707,21 @@
       });
       html += '</tbody></table>';
       el.innerHTML = html;
+      _partyDates.forEach(function(d, i) {
+        var container = document.getElementById('party-date-branches-' + i);
+        renderBranchCheckboxes(container, getPartyDateBranches(d), 'party-date-row', i);
+        if (!container) return;
+        container.querySelectorAll('input[type="checkbox"]').forEach(function(input) {
+          input.addEventListener('change', function() {
+            updatePartyDateBranches(i, getSelectedBranchesFromContainer(container));
+          });
+        });
+      });
+    }
+
+    function updatePartyDateBranches(idx, branches) {
+      _partyDates[idx].branches = branches.slice();
+      savePartyDates();
     }
 
     function removePartyDate(idx) {
@@ -679,7 +741,12 @@
       var newDayName = prompt('요일명 (예: 토요일):', d.dayName || '');
       if (newDayName === null) return;
       var prevKey = getPartyDateKey(d);
-      _partyDates[idx] = { date: newDate.trim(), label: newLabel.trim(), dayName: newDayName.trim() };
+      _partyDates[idx] = {
+        date: newDate.trim(),
+        label: newLabel.trim(),
+        dayName: newDayName.trim(),
+        branches: getPartyDateBranches(d)
+      };
       var nextKey = getPartyDateKey(_partyDates[idx]);
       if (prevKey !== nextKey && _scarcityOverrides.hasOwnProperty(prevKey)) {
         _scarcityOverrides[nextKey] = _scarcityOverrides[prevKey];
@@ -782,10 +849,16 @@
             showToast('이미 추가된 날짜입니다.', true); return;
           }
 
-          _partyDates.push({ date: dateVal, label: label, dayName: dayName });
+          _partyDates.push({
+            date: dateVal,
+            label: label,
+            dayName: dayName,
+            branches: getSelectedBranchesFromContainer(document.getElementById('new-party-branches'))
+          });
           savePartyDates();
           dateInput.value = '';
           labelInput.value = '';
+          renderNewPartyDateBranchOptions();
         });
       }
     });

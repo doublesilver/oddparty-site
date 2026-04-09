@@ -1438,6 +1438,17 @@ class TestPartyDatesEndpoints(TestHTTPBase):
         _, data = self._req("GET", "/api/party-dates", token=None)
         self.assertEqual(data["dates"], dates)
 
+    def test_party_dates_preserves_branch_filters(self):
+        dates = [{
+            "date": "2026-06-06",
+            "label": "6/6(토)",
+            "dayName": "토요일",
+            "branches": ["건대"],
+        }]
+        self._req("POST", "/api/admin/party-dates", body={"dates": dates})
+        _, data = self._req("GET", "/api/party-dates", token=None)
+        self.assertEqual(data["dates"], dates)
+
 
 class TestPasswordChangeEndpoint(TestHTTPBase):
 

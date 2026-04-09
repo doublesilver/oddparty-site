@@ -224,6 +224,7 @@
             <ul>
               <li><strong>날짜 추가</strong>: 날짜를 선택하고 표시명(선택)을 입력한 뒤 '날짜 추가'를 누릅니다.</li>
               <li>추가된 날짜는 신청 페이지의 날짜 선택란에 자동으로 표시됩니다.</li>
+              <li><strong>허용 지점</strong>: 날짜별로 오픈할 지점만 선택할 수 있습니다. 아무 지점도 체크하지 않으면 전체 지점이 열립니다.</li>
               <li>각 날짜 옆 <strong>수정/삭제</strong> 버튼으로 관리할 수 있습니다.</li>
             </ul>
             <h4>정원 & 상태 설정</h4>
@@ -279,6 +280,10 @@
                 <input class="settings-input" type="text" id="new-party-label" placeholder="예: 3/1(토) 삼일절 특별파티" style="width:240px;" />
               </div>
               <button class="save-btn" type="button" id="add-party-date-btn" style="padding:9px 18px;font-size:var(--fs-xs);">날짜 추가</button>
+            </div>
+            <div style="margin-bottom:var(--sp-md);">
+              <label class="content-label">허용 지점 (선택 안 하면 전체 오픈)</label>
+              <div id="new-party-branches" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
             </div>
             <div id="party-dates-list" style="font-size:var(--fs-sm);"></div>
           </div>
