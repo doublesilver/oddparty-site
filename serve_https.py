@@ -34,7 +34,7 @@ IS_RAILWAY = any(
     os.getenv(key)
     for key in ("RAILWAY_PROJECT_ID", "RAILWAY_ENVIRONMENT_ID", "RAILWAY_SERVICE_ID")
 )
-ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "oddparty2026")
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "").strip()
 ADMIN_TOKEN_FILE = DATA_DIR / ".admin_token"
 
 
@@ -1209,6 +1209,9 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
                 payload = self._read_payload()
             except (json.JSONDecodeError, ValueError):
                 self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
+                return
+            if not get_admin_token():
+                self._write_json(503, {"error": "관리자 비밀번호가 아직 설정되지 않았습니다."})
                 return
             token = str(payload.get("token", "")).strip()
             if hmac.compare_digest(token, get_admin_token()):

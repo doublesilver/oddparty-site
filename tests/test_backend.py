@@ -1014,6 +1014,13 @@ class TestAuthEndpoints(TestHTTPBase):
                                       content_type="application/json")
         self.assertEqual(status, 400)
 
+    def test_login_returns_503_when_admin_token_not_configured(self):
+        with patch.object(sut, "get_admin_token", return_value=""):
+            status, data = self._req("POST", "/api/auth/login",
+                                      body={"token": "anything"}, token=None)
+        self.assertEqual(status, 503)
+        self.assertIn("error", data)
+
 
 class TestApplicationsEndpoints(TestHTTPBase):
 

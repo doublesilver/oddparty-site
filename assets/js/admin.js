@@ -2,7 +2,6 @@
        CONFIG
     ============================================================ */
     var API_BASE = 'https://oddparty-api-production.up.railway.app';
-    var FALLBACK_PW = 'oddparty2026';  // offline fallback
     var LS_TOKEN = 'admin_token';
     var PAGE_SIZE = 20;
 
@@ -118,16 +117,6 @@
         loadDashboard();
       })
       .catch(function() {
-        // Fallback: if no backend, check against default password
-        if (pw === FALLBACK_PW) {
-          state.token = pw;
-          localStorage.setItem(LS_TOKEN, state.token);
-          errEl.classList.remove('visible');
-          document.getElementById('login-pw').value = '';
-          showShell();
-          loadDashboard();
-          return;
-        }
         errEl.classList.add('visible');
         document.getElementById('login-pw').value = '';
         document.getElementById('login-pw').focus();
@@ -144,12 +133,6 @@
         loadDashboard();
       })
       .catch(function() {
-        // Fallback: if no backend, accept stored fallback password
-        if (state.token === FALLBACK_PW) {
-          showShell();
-          loadDashboard();
-          return;
-        }
         state.token = '';
         localStorage.removeItem(LS_TOKEN);
       });
@@ -1187,11 +1170,6 @@
         }
       });
 
-      /* Include scarcity overrides in content */
-      if (Object.keys(pendingScarcityOverrides).length > 0) {
-        content['scarcity_override'] = JSON.stringify(pendingScarcityOverrides);
-      }
-
       var savePromises = [];
 
       /* Save site content */
@@ -1250,7 +1228,6 @@
         /* Clear pending state (don't reload iframes - values are already in the DOM) */
         pendingChanges = {};
         pendingAccountChanges = {};
-        pendingScarcityOverrides = {};
         updatePendingBadge();
       })
       .catch(function() {
@@ -1649,9 +1626,6 @@
       }
     }
 
-    /* Scarcity override state */
-    var pendingScarcityOverrides = {};
-
     function injectEditableOverlay(iframe, iframeId) {
       try {
         var iDoc = iframe.contentDocument || iframe.contentWindow.document;
@@ -1664,14 +1638,14 @@
           'input,textarea,select{pointer-events:none !important;}' +
           'form{pointer-events:none !important;}' +
           '.sticky-cta{display:none !important;}' +
-          '[data-admin-editable],[data-admin-account-editable],[data-admin-scarcity]{pointer-events:auto !important;cursor:pointer !important;}';
+          '[data-admin-editable],[data-admin-account-editable]{pointer-events:auto !important;cursor:pointer !important;}';
         iDoc.head.appendChild(disableStyle);
 
         /* Prevent all navigation */
         iDoc.addEventListener('click', function(e) {
           var target = e.target;
-          if (target.hasAttribute('data-admin-editable') || target.hasAttribute('data-admin-account-editable') || target.hasAttribute('data-admin-scarcity')) return;
-          if (target.closest('[data-admin-editable]') || target.closest('[data-admin-account-editable]') || target.closest('[data-admin-scarcity]')) return;
+          if (target.hasAttribute('data-admin-editable') || target.hasAttribute('data-admin-account-editable')) return;
+          if (target.closest('[data-admin-editable]') || target.closest('[data-admin-account-editable]')) return;
           e.preventDefault();
           e.stopPropagation();
         }, true);
@@ -1709,28 +1683,6 @@
           '[data-admin-account-editable].admin-edited{outline:2px solid rgba(46,204,113,0.6);outline-offset:2px;}' +
           '';
         iDoc.head.appendChild(style);
-
-        /* ── Scarcity badge dropdown (form page only) ── */
-        if (iframeId === 'preview-form') {
-          var scarcityLevels = ['모집중', '마감임박', '마감'];
-
-          iDoc.querySelectorAll('[id^="scarcity-"]').forEach(function(badge) {
-            var badgeId = badge.id;
-            if (!badgeId) return;
-            badge.setAttribute('data-admin-scarcity', badgeId);
-            badge.style.pointerEvents = 'auto';
-            badge.style.cursor = 'pointer';
-            badge.style.position = 'relative';
-            badge.style.zIndex = '10';
-
-            badge.addEventListener('click', function(e) {
-              e.preventDefault();
-              e.stopPropagation();
-              /* Show dropdown in parent (admin) page, not inside iframe */
-              showScarcityDropdown(badge, badgeId, iframe);
-            });
-          });
-        }
 
         /* Mark content editable fields */
         var contentIds = IFRAME_EDITABLE_MAP[iframeId] || [];
@@ -1798,77 +1750,8 @@
       }
     }
 
-    /* Scarcity dropdown rendered in admin page (not inside iframe) */
-    function showScarcityDropdown(badge, badgeId, iframe) {
-      var scarcityLevels = ['모집중', '마감임박', '마감'];
-      /* Remove any existing dropdown */
-      var existing = document.getElementById('admin-scarcity-dd');
-      if (existing) { existing.remove(); return; }
-
-      var currentLevel = badge.textContent.trim() || '모집중';
-
-      var dropdown = document.createElement('div');
-      dropdown.id = 'admin-scarcity-dd';
-      dropdown.style.cssText = 'position:fixed;z-index:99999;background:#1e1e2e;border:1.5px solid rgba(167,139,250,0.4);border-radius:8px;padding:4px 0;box-shadow:0 8px 24px rgba(0,0,0,0.4);min-width:100px;';
-
-      scarcityLevels.forEach(function(level) {
-        var opt = document.createElement('div');
-        opt.style.cssText = 'padding:8px 16px;font-size:13px;color:#e0e0e0;cursor:pointer;transition:background .15s;white-space:nowrap;font-family:var(--font);';
-        if (level === currentLevel) opt.style.cssText += 'color:#a78bfa;font-weight:700;';
-        opt.textContent = level;
-
-        opt.addEventListener('mouseenter', function() { opt.style.background = 'rgba(167,139,250,0.15)'; });
-        opt.addEventListener('mouseleave', function() { opt.style.background = 'none'; });
-
-        opt.addEventListener('click', function(ev) {
-          ev.stopPropagation();
-          badge.textContent = level;
-          /* Update badge class using classList to preserve attributes */
-          badge.classList.remove('scarcity', 'urgent', 'closed', 'available');
-          if (level === '마감') {
-            badge.classList.add('closed');
-          } else if (level === '마감임박') {
-            badge.classList.add('scarcity', 'urgent');
-          } else {
-            badge.classList.add('available');
-          }
-          badge.style.outline = '2px solid rgba(46,204,113,0.6)';
-          badge.style.outlineOffset = '2px';
-          setTimeout(function() { badge.style.outline = ''; badge.style.outlineOffset = ''; }, 2000);
-
-          /* Track override */
-          var dayName = badgeId.replace('scarcity-', '');
-          pendingScarcityOverrides[dayName] = level;
-          updatePendingBadge();
-          dropdown.remove();
-        });
-        dropdown.appendChild(opt);
-      });
-
-      /* Calculate position: badge rect in iframe → transform to admin page coords */
-      var badgeRect = badge.getBoundingClientRect();
-      var iframeRect = iframe.getBoundingClientRect();
-      var scale = iframeRect.width / (iframe.contentWindow.innerWidth || iframeRect.width);
-
-      var left = iframeRect.left + (badgeRect.left * scale);
-      var top = iframeRect.top + (badgeRect.bottom * scale) + 4;
-
-      dropdown.style.left = left + 'px';
-      dropdown.style.top = top + 'px';
-      document.body.appendChild(dropdown);
-
-      /* Close on click outside */
-      var closeHandler = function(ev) {
-        if (!dropdown.contains(ev.target)) {
-          dropdown.remove();
-          document.removeEventListener('click', closeHandler, true);
-        }
-      };
-      setTimeout(function() { document.addEventListener('click', closeHandler, true); }, 10);
-    }
-
     function updatePendingBadge() {
-      var count = Object.keys(pendingChanges).length + Object.keys(pendingAccountChanges).length + Object.keys(pendingScarcityOverrides).length;
+      var count = Object.keys(pendingChanges).length + Object.keys(pendingAccountChanges).length;
       var badge = document.getElementById('pending-badge');
       if (badge) {
         badge.textContent = count + '개 변경사항';
