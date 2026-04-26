@@ -1492,6 +1492,29 @@ class PartyRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self._write_json(500, {"error": str(exc)})
             return
 
+        if parsed.path == "/api/discount/validate":
+            try:
+                payload = self._read_payload()
+                code = str(payload.get("code", "") or "").strip()
+                if not code:
+                    self._write_json(400, {"error": "code 파라미터가 필요합니다."})
+                    return
+                info = STORE.validate_discount_code(code)
+                if info:
+                    self._write_json(200, {
+                        "valid": True,
+                        "discount_type": info["discount_type"],
+                        "discount_value": info["discount_value"],
+                        "code": info["code"],
+                    })
+                else:
+                    self._write_json(200, {"valid": False})
+            except (json.JSONDecodeError, ValueError):
+                self._write_json(400, {"error": "요청 본문 형식이 올바르지 않습니다."})
+            except Exception as exc:
+                self._write_json(500, {"error": str(exc)})
+            return
+
         if parsed.path != "/api/applications":
             self._write_json(404, {"error": "지원하지 않는 경로입니다."})
             return
