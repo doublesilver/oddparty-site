@@ -1268,6 +1268,27 @@ class TestDiscountCodeEndpoints(TestHTTPBase):
         status, _ = self._req("GET", "/api/discount/validate", token=None)
         self.assertEqual(status, 400)
 
+    def test_post_validate_discount_code_valid(self):
+        self.store.create_discount_code("POST_VALID", "fixed", 3000, 0)
+        status, data = self._req("POST", "/api/discount/validate",
+                                  body={"code": "POST_VALID"}, token=None)
+        self.assertEqual(status, 200)
+        self.assertTrue(data["valid"])
+        self.assertEqual(data["discount_type"], "fixed")
+        self.assertEqual(data["discount_value"], 3000)
+
+    def test_post_validate_discount_code_empty_code_returns_400(self):
+        status, data = self._req("POST", "/api/discount/validate",
+                                  body={"code": ""}, token=None)
+        self.assertEqual(status, 400)
+        self.assertIn("error", data)
+
+    def test_post_validate_discount_code_unknown_returns_valid_false(self):
+        status, data = self._req("POST", "/api/discount/validate",
+                                  body={"code": "NONEXISTENT_XYZ"}, token=None)
+        self.assertEqual(status, 200)
+        self.assertFalse(data["valid"])
+
 
 class TestFaqEndpoints(TestHTTPBase):
 
