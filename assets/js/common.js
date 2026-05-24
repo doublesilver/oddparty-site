@@ -1,7 +1,7 @@
 /* =============================================
    COMMON UTILITIES — shared across all pages
    ============================================= */
-var API_BASE = "https://oddparty-api-production.up.railway.app";
+var API_BASE = "https://161-33-26-88.nip.io";
 
 /** HTML-escape user/API strings to prevent XSS */
 function esc(s) {

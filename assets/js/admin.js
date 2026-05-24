@@ -1,7 +1,7 @@
     /* ============================================================
        CONFIG
     ============================================================ */
-    var API_BASE = 'https://oddparty-api-production.up.railway.app';
+    var API_BASE = 'https://161-33-26-88.nip.io';
     var LS_TOKEN = 'admin_token';
     var PAGE_SIZE = 20;
 
