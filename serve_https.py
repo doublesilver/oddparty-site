@@ -54,7 +54,6 @@ def set_admin_token(new_token: str) -> None:
 ALLOWED_ORIGINS = [
     "https://gagisiro-party-demo-site.vercel.app",
     "https://oddparty.vercel.app",
-    "https://oddparty-api-production.up.railway.app",
 ]
 ACCOUNT_INFO = {
     "bank": "농협",
